@@ -343,6 +343,125 @@ function renderIso(audit) {
     </details>`).join('');
 }
 
+
+
+function pathLabel(url) {
+  try { const u = new URL(url); return `${u.pathname || '/'}${u.search || ''}`; } catch { return String(url || ''); }
+}
+
+function statusPill(value, kind = '') {
+  return `<span class="data-pill ${escapeHtml(kind)}">${escapeHtml(value)}</span>`;
+}
+
+function renderSeo(audit) {
+  const seo = audit.seo;
+  if (!seo) {
+    $('#seoKpis').innerHTML = '<p class="muted">Resumen SEO no disponible.</p>';
+    return;
+  }
+  const m = seo.metadata || {}, h = seo.headings || {}, c = seo.coverage || {}, links = seo.links || {};
+  const kpis = [
+    [c.indexable ?? 0, 'Indexables', 'good'],
+    [m.missingTitles ?? 0, 'Sin title', (m.missingTitles || 0) ? 'bad' : 'good'],
+    [m.duplicateTitleGroups ?? 0, 'Titles duplicados', (m.duplicateTitleGroups || 0) ? 'warn' : 'good'],
+    [m.missingDescriptions ?? 0, 'Sin description', (m.missingDescriptions || 0) ? 'warn' : 'good'],
+    [h.pagesMissingH1 ?? 0, 'Sin H1', (h.pagesMissingH1 || 0) ? 'bad' : 'good'],
+    [h.pagesMultipleH1 ?? 0, 'Múltiples H1', (h.pagesMultipleH1 || 0) ? 'warn' : 'good'],
+    [m.missingCanonicals ?? 0, 'Sin canonical', (m.missingCanonicals || 0) ? 'warn' : 'good'],
+    [c.noindex ?? 0, 'Noindex', (c.noindex || 0) ? 'info' : 'good']
+  ];
+  $('#seoKpis').innerHTML = kpis.map(([value,label,state], index) => `<article class="seo-kpi ${state}" style="--delay:${index * 35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+
+  $('#seoDomain').innerHTML = metricRows([
+    ['Dominio', new URL(seo.origin).hostname],
+    ['URL final', seo.finalUrl || audit.meta.target],
+    ['robots.txt', seo.robots?.status == null ? 'N/D' : `HTTP ${seo.robots.status}`],
+    ['Sitemaps detectados', String(seo.sitemaps?.declared?.length || 0)],
+    ['URLs en sitemap', String(seo.sitemaps?.urlsDiscovered || 0)],
+    ['URLs descubiertas', String(c.discovered || 0)],
+    ['URLs rastreadas', String(c.crawled || 0)],
+    ['Indexables observadas', String(c.indexable || 0)],
+    ['Noindex observadas', String(c.noindex || 0)],
+    ['Errores de rastreo', String(c.crawlErrors || 0)]
+  ]);
+
+  $('#seoLinks').innerHTML = metricRows([
+    ['Enlaces internos', String(links.internal || 0)],
+    ['Enlaces externos', String(links.external || 0)],
+    ['Enlaces totales', String(links.total || 0)],
+    ['Internos rotos observados', String(links.brokenInternalObserved || 0), links.brokenInternalObserved ? 'danger-value' : 'accent-value'],
+    ['Palabras rastreadas', String(seo.content?.words || 0)],
+    ['Páginas < 150 palabras', String(seo.content?.pagesUnder150Words || 0)]
+  ]);
+  $('#seoSchema').innerHTML = (seo.schemaTypes || []).length ? (seo.schemaTypes || []).map(type => `<span>${escapeHtml(type)}</span>`).join('') : '<span class="muted">Sin tipos Schema detectados.</span>';
+
+  $('#seoMetaTable').innerHTML = (seo.rows || []).map(row => {
+    const title = row.title ? `${escapeHtml(row.title)} <small>${row.titleLength} car.</small>` : '<strong class="issue-text">SIN TITLE</strong>';
+    const desc = row.description ? `${escapeHtml(row.description)} <small>${row.descriptionLength} car.</small>` : '<strong class="issue-text">SIN DESCRIPTION</strong>';
+    const canonical = row.canonical ? `${escapeHtml(pathLabel(row.canonical))}<small>${escapeHtml(row.canonicalType)}</small>` : '<strong class="warn-text">SIN CANONICAL</strong>';
+    const robots = row.noindex ? statusPill('NOINDEX','warn') : statusPill(row.robots || 'indexable','good');
+    const h1 = row.hCounts?.h1 === 0 ? '<strong class="issue-text">0</strong>' : `${row.hCounts?.h1 || 0}<small>${escapeHtml((row.h1Texts || []).join(' · '))}</small>`;
+    return `<tr><td><a href="${escapeHtml(row.url)}" target="_blank" rel="noopener">${escapeHtml(pathLabel(row.url))}</a></td><td>${statusPill(`HTTP ${row.status}`, row.status >= 400 ? 'bad' : 'good')}</td><td>${title}</td><td>${desc}</td><td>${canonical}</td><td>${robots}</td><td>${h1}</td><td>${row.wordCount || 0}</td></tr>`;
+  }).join('');
+
+  const sections = [
+    ['Titles duplicados', m.duplicateTitles || []],
+    ['Descriptions duplicadas', m.duplicateDescriptions || []],
+    ['H1 principales repetidos', h.duplicateH1 || []]
+  ];
+  $('#seoDuplicateGroups').innerHTML = sections.map(([label, groups]) => `<section class="duplicate-section"><h4>${escapeHtml(label)} <span>${groups.length}</span></h4>${groups.length ? groups.map(group => `<details><summary><strong>${escapeHtml(group.value)}</strong><span>${group.urls.length} URLs</span></summary><ul>${group.urls.map(url => `<li>${escapeHtml(pathLabel(url))}</li>`).join('')}</ul></details>`).join('') : '<p class="muted">No se detectaron grupos duplicados.</p>'}</section>`).join('');
+}
+
+function renderHeadingPage(audit, pageIndex) {
+  const page = audit.pages?.[pageIndex];
+  if (!page) return;
+  $('#headingPageTitle').textContent = pathLabel(page.url);
+  const headings = page.headings || [];
+  $('#headingTree').innerHTML = headings.length ? headings.map((heading, index) => `<div class="heading-node h${heading.level}" style="--level:${heading.level};--delay:${Math.min(index,20)*22}ms"><span>H${heading.level}</span><strong>${escapeHtml(heading.text || '(vacío)')}</strong></div>`).join('') : '<div class="empty-core-state"><strong>Sin encabezados H1–H6</strong><p>Esta página no contiene encabezados semánticos detectables en el HTML rastreado.</p></div>';
+}
+
+function renderHeadings(audit) {
+  const h = audit.seo?.headings || {};
+  const totals = h.totals || {};
+  const kpis = [
+    [totals.h1 || 0,'H1'],[totals.h2 || 0,'H2'],[totals.h3 || 0,'H3'],[totals.h4 || 0,'H4'],[totals.h5 || 0,'H5'],[totals.h6 || 0,'H6'],
+    [h.pagesMissingH1 || 0,'Páginas sin H1'],[h.pagesMultipleH1 || 0,'Páginas con +1 H1']
+  ];
+  $('#headingKpis').innerHTML = kpis.map(([value,label], index) => `<article class="heading-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+  const select = $('#headingPageSelect');
+  select.innerHTML = (audit.pages || []).map((page,index) => `<option value="${index}">${escapeHtml(pathLabel(page.url))}</option>`).join('');
+  select.onchange = () => renderHeadingPage(audit, Number(select.value));
+  renderHeadingPage(audit, 0);
+
+  $('#headingMatrix').innerHTML = (audit.pages || []).map(page => {
+    const counts = {1:0,2:0,3:0,4:0,5:0,6:0};
+    (page.headings || []).forEach(hd => { if (counts[hd.level] != null) counts[hd.level] += 1; });
+    const h1 = (page.headings || []).filter(hd => hd.level === 1).map(hd => hd.text).filter(Boolean).join(' · ');
+    return `<tr><td>${escapeHtml(pathLabel(page.url))}</td>${[1,2,3,4,5,6].map(level => `<td class="num-cell ${level === 1 && counts[level] === 0 ? 'issue-cell':''}">${counts[level]}</td>`).join('')}<td>${h1 ? escapeHtml(h1) : '<strong class="issue-text">SIN H1</strong>'}</td></tr>`;
+  }).join('');
+}
+
+function renderImages(audit) {
+  const items = [];
+  for (const page of audit.pages || []) for (const image of page.images || []) items.push({ page: page.url, ...image });
+  const missingAlt = items.filter(item => item.alt === null).length;
+  const emptyAlt = items.filter(item => item.alt === '').length;
+  const missingDimensions = items.filter(item => !item.width || !item.height).length;
+  const lazy = items.filter(item => String(item.loading).toLowerCase() === 'lazy').length;
+  const responsive = items.filter(item => item.srcset).length;
+  const kpis = [[items.length,'Imágenes'],[missingAlt,'Sin atributo ALT'],[emptyAlt,'ALT vacío'],[missingDimensions,'Sin width/height'],[lazy,'Lazy loading'],[responsive,'Con srcset']];
+  $('#imageKpis').innerHTML = kpis.map(([value,label], index) => `<article class="image-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+  $('#imagesTable').innerHTML = items.slice(0, 400).map(item => `<tr><td>${escapeHtml(pathLabel(item.page))}</td><td title="${escapeHtml(item.src || '')}">${escapeHtml(pathLabel(item.src || ''))}</td><td>${item.alt === null ? '<strong class="issue-text">SIN ALT</strong>' : (item.alt === '' ? '<span class="warn-text">alt=""</span>' : escapeHtml(item.alt))}</td><td>${escapeHtml(`${item.width || '—'} × ${item.height || '—'}`)}</td><td>${escapeHtml(item.loading || 'auto')}</td><td>${item.srcset ? statusPill('Sí','good') : 'No'}</td></tr>`).join('');
+}
+
+function renderPages(audit) {
+  $('#pagesList').innerHTML = (audit.pages || []).map((page,index) => {
+    const h1 = (page.headings || []).filter(h => h.level === 1);
+    const tree = (page.headings || []).slice(0,40).map(h => `<div class="mini-heading" style="--level:${h.level}"><b>H${h.level}</b><span>${escapeHtml(h.text || '(vacío)')}</span></div>`).join('');
+    return `<details class="page-audit-card" ${index === 0 ? 'open':''}><summary><div><strong>${escapeHtml(pathLabel(page.url))}</strong><span>${escapeHtml(page.title || 'Sin title')}</span></div>${statusPill(`HTTP ${page.status}`, page.status >= 400 ? 'bad':'good')}</summary><div class="page-audit-body"><dl><dt>Title</dt><dd>${escapeHtml(page.title || '—')}</dd><dt>Description</dt><dd>${escapeHtml(page.description || '—')}</dd><dt>Canonical</dt><dd>${escapeHtml(page.canonical || '—')}</dd><dt>Robots</dt><dd>${escapeHtml(page.robots || 'index/follow por defecto')}</dd><dt>Idioma</dt><dd>${escapeHtml(page.lang || '—')}</dd><dt>Viewport</dt><dd>${escapeHtml(page.viewport || '—')}</dd><dt>Palabras</dt><dd>${page.content?.wordCount || 0}</dd><dt>Imágenes</dt><dd>${page.imageCount || 0}</dd><dt>Enlaces</dt><dd>${page.linkCount || 0}</dd><dt>Schema</dt><dd>${escapeHtml((page.structuredData?.types || []).join(', ') || '—')}</dd><dt>H1</dt><dd>${h1.length} · ${escapeHtml(h1.map(h=>h.text).join(' | ') || '—')}</dd></dl><div class="mini-heading-tree"><h4>Árbol H1–H6</h4>${tree || '<p class="muted">Sin headings.</p>'}</div></div></details>`;
+  }).join('');
+}
+
 function renderConsistency(audit) {
   const c = audit.meta?.consistency || {};
   const cacheLabels = { HIT:'Reutilizado · mismo resultado', STORED:'Guardado · 30 min', BYPASS:'Sin caché', '—':'Sin dato' };
@@ -362,9 +481,8 @@ function renderAudit(audit) {
   currentAudit = audit;
   $('#targetName').textContent = new URL(audit.meta.target).hostname;
   $('#auditMeta').textContent = `${audit.meta.id} · ${audit.summary.pagesCrawled} páginas · ${audit.summary.findingsTotal ?? audit.findings.length} hallazgos${audit.summary.payloadTruncated ? ` (mostrando ${audit.summary.findingsReturned} prioritarios)` : ''} · ${new Date(audit.meta.finishedAt).toLocaleString('es-PE')}`;
-  renderScores(audit); renderStats(audit); renderConsistency(audit); renderPageSpeed(audit); renderBrowser(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit);
+  renderScores(audit); renderStats(audit); renderConsistency(audit); renderSeo(audit); renderHeadings(audit); renderImages(audit); renderPageSpeed(audit); renderBrowser(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit);
   $('#modules').innerHTML = Object.entries(audit.modules).map(([key,value]) => `<div class="module"><b>${escapeHtml(key)}</b><span class="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join('');
-  $('#pagesList').innerHTML = audit.pages.map(page => `<div class="page-row"><span title="${escapeHtml(page.url)}">${escapeHtml(new URL(page.url).pathname || '/')}</span><b>HTTP ${page.status}</b></div>`).join('');
 }
 
 form.addEventListener('submit', async (event) => {
@@ -396,6 +514,8 @@ $('#exportPdf').addEventListener('click', async () => {
       performance: currentAudit.performance ? { status: currentAudit.performance.status, mobile: currentAudit.performance.mobile, desktop: currentAudit.performance.desktop } : null,
       browser: currentAudit.browser?.moduleStatus === 'measured' ? { moduleStatus:'measured', domNodes:currentAudit.browser.domNodes, performance:currentAudit.browser.performance, contrast:currentAudit.browser.contrast, responsive:currentAudit.browser.responsive, axe:currentAudit.browser.axe, network:currentAudit.browser.network } : currentAudit.browser,
       infrastructure: currentAudit.infrastructure,
+      seo: currentAudit.seo,
+      pages: currentAudit.pages,
       peru: currentAudit.peru,
       iso: currentAudit.iso
     };

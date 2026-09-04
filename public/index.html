@@ -23,7 +23,7 @@
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema">
         <span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span>
       </button>
-      <div class="version">ENGINE 0.6.0</div>
+      <div class="version">ENGINE 0.7.0</div>
     </div>
   </header>
 
@@ -83,13 +83,16 @@
 
       <nav class="dashboard-nav" aria-label="Secciones de la auditoría" role="tablist">
         <button class="dashboard-tab active" type="button" role="tab" aria-selected="true" data-tab="overview">Resumen</button>
+        <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="seo">SEO</button>
+        <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="headings">H1–H6</button>
+        <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="pages">Páginas</button>
+        <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="images">Imágenes</button>
         <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="performance">Rendimiento</button>
         <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="visual">Diseño</button>
-        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="infrastructure">Infraestructura</button>
+        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="infrastructure">Seguridad</button>
         <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="peru">Perú</button>
         <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="iso">ISO</button>
         <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="findings">Observaciones</button>
-        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="pages">Páginas</button>
       </nav>
 
       <section class="analysis-view active" data-view="overview" role="tabpanel">
@@ -110,6 +113,33 @@
           <div id="consistencyMetrics" class="consistency-grid"></div>
           <p class="legal-note">Las métricas de laboratorio nunca son matemáticamente idénticas para siempre: una web puede cambiar, usar A/B tests, anuncios o recursos dinámicos. El modo estable reduce la variación y reutiliza temporalmente la misma auditoría.</p>
         </article>
+      </section>
+
+      <section class="analysis-view" data-view="seo" role="tabpanel" hidden>
+        <div class="section-intro"><div><span>SEO TÉCNICO Y ON-PAGE</span><h3>Qué encuentra el dominio, qué falta y en qué URL</h3></div><p>Datos reales extraídos del HTML de cada página rastreada.</p></div>
+        <div class="seo-kpis" id="seoKpis"></div>
+        <div class="seo-core-grid">
+          <article class="panel"><span>DOMINIO E INDEXABILIDAD</span><h3>Robots, sitemap y cobertura</h3><div id="seoDomain" class="metric-list"></div></article>
+          <article class="panel"><span>ENLACES Y SCHEMA</span><h3>Arquitectura detectada</h3><div id="seoLinks" class="metric-list"></div><div id="seoSchema" class="chip-list"></div></article>
+        </div>
+        <article class="panel seo-table-panel"><div class="panel-head"><div><span>METADATOS POR URL</span><h3>Title, description, canonical, robots y H1</h3></div></div><div class="table-scroll"><table class="audit-table"><thead><tr><th>URL</th><th>HTTP</th><th>Title</th><th>Description</th><th>Canonical</th><th>Robots</th><th>H1</th><th>Palabras</th></tr></thead><tbody id="seoMetaTable"></tbody></table></div></article>
+        <article class="panel"><div class="panel-head"><div><span>DUPLICADOS Y COBERTURA</span><h3>Problemas que afectan varias páginas</h3></div></div><div id="seoDuplicateGroups" class="duplicate-groups"></div></article>
+      </section>
+
+      <section class="analysis-view" data-view="headings" role="tabpanel" hidden>
+        <div class="section-intro"><div><span>ESTRUCTURA H1–H6</span><h3>Jerarquía semántica completa del sitio</h3></div><p>Selecciona una página para inspeccionar todos sus encabezados.</p></div>
+        <div class="heading-kpis" id="headingKpis"></div>
+        <article class="panel heading-explorer">
+          <div class="panel-head"><div><span>EXPLORADOR DE ENCABEZADOS</span><h3 id="headingPageTitle">—</h3></div><select id="headingPageSelect" aria-label="Seleccionar página"></select></div>
+          <div id="headingTree" class="heading-tree"></div>
+        </article>
+        <article class="panel"><div class="panel-head"><div><span>MATRIZ POR PÁGINA</span><h3>Cuántos H1, H2, H3, H4, H5 y H6 tiene cada URL</h3></div></div><div class="table-scroll"><table class="audit-table heading-matrix"><thead><tr><th>URL</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H1 principal</th></tr></thead><tbody id="headingMatrix"></tbody></table></div></article>
+      </section>
+
+      <section class="analysis-view" data-view="images" role="tabpanel" hidden>
+        <div class="section-intro"><div><span>IMÁGENES</span><h3>ALT, dimensiones, lazy loading y ubicación</h3></div><p>Inventario real de las imágenes encontradas en las páginas rastreadas.</p></div>
+        <div class="image-kpis" id="imageKpis"></div>
+        <article class="panel"><div class="panel-head"><div><span>INVENTARIO</span><h3>Imágenes inspeccionadas</h3></div></div><div class="table-scroll"><table class="audit-table"><thead><tr><th>Página</th><th>Imagen</th><th>ALT</th><th>Dimensiones</th><th>Loading</th><th>Srcset</th></tr></thead><tbody id="imagesTable"></tbody></table></div></article>
       </section>
 
       <section class="analysis-view" data-view="performance" role="tabpanel" hidden>
@@ -175,7 +205,7 @@
       <section class="analysis-view" data-view="pages" role="tabpanel" hidden>
         <div class="pages-grid">
           <article class="panel"><span>MÓDULOS</span><h3>Cobertura actual</h3><div id="modules" class="modules"></div></article>
-          <article class="panel"><span>PÁGINAS</span><h3>URLs inspeccionadas</h3><div id="pagesList" class="pages-list"></div></article>
+          <article class="panel"><span>PÁGINAS</span><h3>Ficha SEO por URL</h3><p class="legal-note">Abre una página para ver metadatos y estructura H1–H6 detectada.</p><div id="pagesList" class="pages-list page-details-list"></div></article>
         </div>
       </section>
     </section>

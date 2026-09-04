@@ -53,10 +53,6 @@
     {
       "source": "/js/:path*",
       "destination": "/public/js/:path*"
-    },
-    {
-      "source": "/chromium-pack.tar",
-      "destination": "/public/chromium-pack.tar"
     }
   ],
   "regions": [

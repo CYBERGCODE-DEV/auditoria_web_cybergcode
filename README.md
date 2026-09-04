@@ -1,10 +1,61 @@
-# CYBERGCODE Web Audit Intelligence v0.6.0
+# CYBERGCODE Web Audit Intelligence v0.7.0
 
 Auditoría web integral orientada a despliegue **GitHub -> Vercel**, desarrollada con HTML, CSS, JavaScript y Node.js/Vercel Functions.
 
 **Empresa:** CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C.  
 **RUC:** 20615849988  
 **Dominio:** cybergcode.com
+
+## Qué cambia en V0.7 — SEO Core
+
+V0.7 reordena el producto para que el núcleo de la auditoría sea visible y verificable. SEO, H1–H6, páginas e imágenes pasan al primer nivel del dashboard; ISO y cumplimiento permanecen como capas complementarias.
+
+### SEO de dominio
+
+La auditoría agrega resultados de todas las URLs rastreadas y muestra:
+
+- robots.txt y sitemaps;
+- URLs descubiertas, rastreadas, indexables y `noindex`;
+- estado HTTP por página;
+- title real y longitud informativa;
+- titles ausentes y grupos duplicados;
+- meta descriptions ausentes y duplicadas;
+- canonical ausente, autorreferente, alternativo o externo;
+- idioma `lang` y meta viewport;
+- enlaces internos/externos y enlaces internos rotos observados entre URLs rastreadas;
+- tipos Schema.org detectados;
+- palabras aproximadas por URL.
+
+Las longitudes se muestran como información/heurística y no como una falsa regla absoluta de Google.
+
+### Explorador H1–H6
+
+Se añadió un menú específico `H1–H6` con:
+
+- totales H1, H2, H3, H4, H5 y H6;
+- páginas sin H1;
+- páginas con múltiples H1;
+- H1 principales repetidos entre URLs;
+- árbol completo por página;
+- matriz de encabezados por URL;
+- texto exacto de cada encabezado.
+
+### Ficha SEO por página
+
+Cada URL se puede expandir para ver title, description, canonical, robots, idioma, viewport, palabras, imágenes, enlaces, Schema y su árbol H1–H6.
+
+### Inventario de imágenes
+
+El menú `Imágenes` muestra página de origen, URL de recurso, ALT, dimensiones, `loading` y `srcset`, además de KPIs de cobertura.
+
+### Chromium en Vercel
+
+V0.7 prioriza `@sparticuz/chromium` empaquetado dentro de la Function y deja `chromium-min`/pack remoto como fallback. Esto elimina la dependencia principal de la URL `/chromium-pack.tar` que podía devolver 404 y dejar DOM renderizado, capturas, axe-core y diseño como `N/D`.
+
+### PDF
+
+El PDF incorpora ahora SEO técnico, cobertura, duplicados y estructura H1–H6 por URL.
+
 
 ## Qué cambia en V0.6
 
@@ -206,7 +257,7 @@ La salida registra:
 - JSON-LD básico.
 - Imágenes: alt, dimensiones, loading, srcset y HEAD limitado.
 - Seguridad pasiva: HTTPS, HSTS, CSP, nosniff, Referrer-Policy, Permissions-Policy, disclosure y mixed content.
-- **Chromium/Puppeteer en Vercel** mediante `puppeteer-core` + `@sparticuz/chromium-min`.
+- **Chromium/Puppeteer en Vercel** mediante `puppeteer-core` + `@sparticuz/chromium` empaquetado; `chromium-min` queda como fallback explícito.
 - Comparación **Raw HTML vs Rendered DOM**.
 - Errores JavaScript en renderizado.
 - Paleta y tipografías obtenidas desde estilos computados.
@@ -239,15 +290,9 @@ La salida registra:
 
 ## Compatibilidad con Vercel
 
-El proyecto evita empaquetar Chromium completo dentro de la Function.
+V0.7 prioriza `@sparticuz/chromium` dentro de la Function. Ya no depende de que el deployment se descargue a sí mismo `/chromium-pack.tar`, evitando el 404 observado en V0.6.
 
-Durante `npm install`, el script `postinstall` crea:
-
-```text
-public/chromium-pack.tar
-```
-
-usando `@sparticuz/chromium`. En runtime, la Function carga `@sparticuz/chromium-min` y descarga el pack desde el propio deployment de Vercel.
+`@sparticuz/chromium-min` se conserva únicamente como fallback cuando se define explícitamente `CHROMIUM_PACK_URL`.
 
 Versiones fijadas deliberadamente:
 
@@ -266,7 +311,7 @@ axe-core                 4.13.0
 3. Sube todo el proyecto.
 4. En Vercel: **Add New -> Project -> Import Git Repository**.
 5. Framework Preset: **Other**.
-6. No hace falta Build Command especial; `npm install` ejecutará `postinstall`.
+6. No hace falta Build Command especial; Vercel instalará las dependencias fijadas en `package.json`.
 7. Activa Fluid Compute en el proyecto si no estuviera activo.
 8. Despliega.
 
@@ -275,7 +320,7 @@ El archivo `vercel.json` ya define hasta 300 segundos para `/api/audit.js` y fij
 ## Validación actual
 
 ```text
-20 / 20 tests passed
+23 / 23 tests passed
 npm run check passed
 ```
 

@@ -6,9 +6,9 @@ const html = fs.readFileSync(new URL('../public/index.html', import.meta.url), '
 const css = fs.readFileSync(new URL('../public/css/app.css', import.meta.url), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 
-test('dashboard separa la auditoría en ocho menús interactivos', () => {
+test('dashboard prioriza SEO, H1-H6 y páginas en once menús interactivos', () => {
   const tabs = [...html.matchAll(/data-tab="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(tabs, ['overview','performance','visual','infrastructure','peru','iso','findings','pages']);
+  assert.deepEqual(tabs, ['overview','seo','headings','pages','images','performance','visual','infrastructure','peru','iso','findings']);
 });
 
 test('interfaz incluye modo estable, tema y preferencias de movimiento reducido', () => {
@@ -27,4 +27,14 @@ test('tipografía es escalable y footer queda al fondo del viewport', () => {
 
 test('Vercel usa una región fija para reducir variación de ejecución', () => {
   assert.deepEqual(vercel.regions, ['iad1']);
+});
+
+
+test('dashboard contiene vistas SEO y H1-H6 con tablas de datos reales', () => {
+  assert.match(html, /data-view="seo"/);
+  assert.match(html, /id="seoMetaTable"/);
+  assert.match(html, /data-view="headings"/);
+  assert.match(html, /id="headingTree"/);
+  assert.match(html, /id="headingMatrix"/);
+  assert.match(html, /id="imagesTable"/);
 });

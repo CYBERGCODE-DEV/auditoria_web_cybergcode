@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.0 - 2026-09-04
+
+- SEO pasa a ser un módulo principal del dashboard.
+- Nuevo resumen SEO de dominio con robots, sitemap, indexabilidad, metadatos, duplicados, enlaces y Schema.
+- Nuevo explorador H1-H6 y matriz completa por página.
+- Nueva ficha SEO expandible por URL.
+- Nuevo inventario de imágenes visible.
+- Nuevas reglas: title duplicado, description duplicada, H1 repetido, lang ausente, viewport ausente y canonical externo.
+- Remediación y criterio de cierre para las nuevas reglas.
+- PDF ampliado con SEO y H1-H6.
+- Chromium empaquetado en Vercel como ruta principal; pack remoto queda como fallback.
+- 23 pruebas unitarias aprobadas.
+
 ## 0.6.0 - 2026-09-04
 
 - Rediseña el dashboard con **8 menús interactivos**: Resumen, Rendimiento, Diseño, Infraestructura, Perú, ISO, Observaciones y Páginas.
