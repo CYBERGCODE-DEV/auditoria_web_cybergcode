@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.8.0
+# CYBERGCODE Web Audit Intelligence v0.8.1
 
 Plataforma de auditoría web integral construida con HTML, CSS y JavaScript en frontend y Node.js/Vercel Functions en backend.
 
@@ -55,3 +55,23 @@ El auditor bloquea localhost, redes privadas/reservadas y protocolos no HTTP/HTT
 CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C.  
 RUC 20615849988  
 cybergcode.com · Lambayeque, Perú
+
+
+## Verificación después de desplegar en Vercel
+
+La web pública que se revisó antes de este hotfix seguía mostrando `ENGINE 0.7.0`. Para confirmar que Vercel está sirviendo este paquete y no el deployment anterior:
+
+1. Los archivos de este ZIP deben quedar en la **raíz del repositorio** (`package.json`, `vercel.json`, `api/`, `lib/`, `public/`).
+2. Haz commit/push a la rama conectada a Vercel.
+3. En Vercel verifica que el deployment corresponda a ese commit y promociónalo a Production.
+4. Abre la web y confirma que arriba aparece `ENGINE 0.8.1`.
+5. Haz una recarga forzada (`Ctrl+F5`) una vez. Los CSS/JS llevan `?v=0.8.1` y la página principal usa `Cache-Control: no-store`.
+6. Al iniciar una auditoría, la barra superior desaparece y se abre el loader oscuro de pantalla completa. El centro muestra el logo detectado del dominio si el sitio publica uno accesible; en caso contrario muestra un fallback textual explícito.
+
+### Loader 0.8.1
+
+- CYBERGCODE usa el símbolo/logo aprobado en el producto.
+- El dominio auditado se muestra dinámicamente.
+- `/api/identity` busca un logo real en HTML, metadatos y JSON-LD y descarga el recurso con protección SSRF.
+- No hay porcentaje ficticio: el valor central es el **tiempo real transcurrido**.
+- Si no existe un logo seguro/usable, la interfaz lo declara y usa iniciales del dominio.

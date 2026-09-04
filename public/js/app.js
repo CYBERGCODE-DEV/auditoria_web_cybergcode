@@ -7,6 +7,8 @@ const errorBox = $('#errorBox');
 const submitButton = form.querySelector('button[type="submit"]');
 let currentAudit = null;
 let currentCacheState = '—';
+let workingStartedAt = 0;
+let workingTimerHandle = null;
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 function syncThemeButton() {
@@ -65,6 +67,35 @@ function view(name) {
   dashboard.classList.toggle('hidden', name !== 'dashboard');
   errorBox.classList.toggle('hidden', name !== 'error');
   if (name === 'dashboard') activateDashboardTab('overview');
+}
+
+function formatElapsed(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+}
+
+function startWorkingTimer() {
+  stopWorkingTimer();
+  workingStartedAt = Date.now();
+  const node = $('#workingElapsed');
+  if (node) node.textContent = '00:00';
+  workingTimerHandle = window.setInterval(() => {
+    if (node) node.textContent = formatElapsed(Date.now() - workingStartedAt);
+  }, 1000);
+}
+
+function stopWorkingTimer() {
+  if (workingTimerHandle) window.clearInterval(workingTimerHandle);
+  workingTimerHandle = null;
+}
+
+function setWorkingStep(id, state = '') {
+  const step = $(id);
+  if (!step) return;
+  step.classList.remove('active','done');
+  if (state) step.classList.add(state);
 }
 
 initRevealAnimations();
@@ -520,20 +551,51 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.8.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.8.1'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
 function prepareWorkingIdentity(raw) {
   let host = raw.replace(/^https?:\/\//i,'').split('/')[0] || raw || 'sitio';
+  host = host.replace(/^www\./i, '');
   $('#workingDomain').textContent = host;
-  $('#workingSiteLogo').hidden = true;
-  $('#workingSiteLogo').removeAttribute('src');
+  $('#identityHost').textContent = host;
+  $('#identitySource').textContent = 'Pendiente';
+  const logo = $('#workingSiteLogo');
+  logo.hidden = true;
+  logo.removeAttribute('src');
   $('#workingSiteFallback').hidden = false;
-  $('#workingSiteFallback').textContent = host.slice(0,3).toUpperCase();
+  $('#workingSiteFallback').textContent = host.split('.')[0].slice(0,3).toUpperCase();
   const status = $('#identityStatus');
-  status.classList.remove('ready');
-  status.querySelector('span').textContent = 'Detectando identidad visual del sitio…';
+  status.classList.remove('ready','fallback');
+  status.querySelector('span').textContent = 'Buscando logo real del dominio…';
+  setWorkingStep('#workingStepConnection', 'active');
+  setWorkingStep('#workingStepIdentity', 'active');
+  setWorkingStep('#workingStepAudit', 'active');
+}
+
+function visualSourceLabel(visual) {
+  if (!visual) return 'No publicado / no accesible';
+  const labels = {
+    'image': 'Logo / imagen de marca en HTML',
+    'inline-svg': 'Logo SVG inline del HTML',
+    'jsonld-logo': 'Logo declarado en Schema/JSON-LD',
+    'meta-logo': 'Logo declarado en metadatos',
+    'icon': 'Icono del sitio',
+    'og-image': 'Imagen Open Graph',
+    'favicon-fallback': 'Favicon del dominio'
+  };
+  return labels[visual.kind] || 'Recurso visual publicado por el sitio';
+}
+
+async function showDetectedSiteLogo(data) {
+  if (!data?.visual?.dataUrl) return false;
+  const img = $('#workingSiteLogo');
+  img.src = data.visual.dataUrl;
+  try { await img.decode?.(); } catch { /* load event fallback below */ }
+  img.hidden = false;
+  $('#workingSiteFallback').hidden = true;
+  return true;
 }
 
 async function loadSiteIdentity(raw) {
@@ -541,21 +603,24 @@ async function loadSiteIdentity(raw) {
     const response = await fetch('/api/identity', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url: raw }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Sin identidad visual');
-    if (data.hostname) $('#workingDomain').textContent = data.hostname;
-    if (data.visual?.dataUrl) {
-      const img = $('#workingSiteLogo');
-      img.src = data.visual.dataUrl;
-      img.hidden = false;
-      $('#workingSiteFallback').hidden = true;
+    if (data.hostname) {
+      $('#workingDomain').textContent = data.hostname;
+      $('#identityHost').textContent = data.hostname;
     }
+    const hasVisual = await showDetectedSiteLogo(data);
     const status = $('#identityStatus');
-    status.classList.add('ready');
-    status.querySelector('span').textContent = data.visual ? 'Identidad visual real detectada' : 'Dominio validado; se usará identificación textual';
+    status.classList.add(hasVisual ? 'ready' : 'fallback');
+    status.querySelector('span').textContent = hasVisual ? 'Logo real detectado y cargado' : 'El sitio no publicó un logo utilizable; se muestra fallback textual';
+    $('#identitySource').textContent = visualSourceLabel(data.visual);
+    setWorkingStep('#workingStepConnection', 'done');
+    setWorkingStep('#workingStepIdentity', 'done');
     return data;
   } catch (error) {
     const status = $('#identityStatus');
-    status.classList.add('ready');
-    status.querySelector('span').textContent = 'Dominio identificado; logo no disponible de forma segura';
+    status.classList.add('fallback');
+    status.querySelector('span').textContent = 'No fue posible obtener un logo público de forma segura';
+    $('#identitySource').textContent = 'Fallback textual del dominio';
+    setWorkingStep('#workingStepIdentity', 'done');
     return null;
   }
 }
@@ -567,24 +632,29 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   submitButton.disabled = true;
   view('working');
+  startWorkingTimer();
   const rawTarget = $('#url').value.trim();
   prepareWorkingIdentity(rawTarget);
   const identityPromise = loadSiteIdentity(rawTarget);
   try {
+    setWorkingStep('#workingStepAudit', 'active');
     const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url:$('#url').value, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Error de auditoría.');
     currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
     await identityPromise.catch(() => null);
+    setWorkingStep('#workingStepAudit', 'done');
+    stopWorkingTimer();
     renderAudit(data); view('dashboard');
   } catch (error) {
+    stopWorkingTimer();
     $('#errorText').textContent = error.message; view('error');
   } finally { submitButton.disabled = false; }
 });
 
 $('#severityFilter').addEventListener('change', () => currentAudit && renderFindings(currentAudit));
-$('#newAudit').addEventListener('click', () => { currentAudit = null; view('hero'); $('#url').focus(); });
-$('#retryButton').addEventListener('click', () => view('hero'));
+$('#newAudit').addEventListener('click', () => { stopWorkingTimer(); currentAudit = null; view('hero'); $('#url').focus(); });
+$('#retryButton').addEventListener('click', () => { stopWorkingTimer(); view('hero'); });
 $('#exportPdf').addEventListener('click', async () => {
   if (!currentAudit) return;
   const button = $('#exportPdf');

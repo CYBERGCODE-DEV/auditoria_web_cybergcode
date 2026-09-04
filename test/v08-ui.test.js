@@ -9,7 +9,7 @@ const engine = fs.readFileSync(new URL('../lib/audit/engine.js', import.meta.url
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
  test('v0.8 implementa branding visual y workspace lateral', () => {
-  assert.equal(pkg.version, '0.8.0');
+  assert.equal(pkg.version, '0.8.1');
   assert.match(html, /\/assets\/cybergcode-logo\.png/);
   assert.match(html, /id="appSidebar"/);
   assert.match(css, /body\[data-view="dashboard"\] \.app-sidebar/);
@@ -19,9 +19,9 @@ const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.ur
 test('loader usa identidad real del dominio y evita porcentaje simulado', () => {
   assert.match(html, /id="workingSiteLogo"/);
   assert.match(html, /id="identityStatus"/);
-  assert.match(html, /No se muestra un porcentaje inventado/);
+  assert.match(html, /no inventa porcentajes/i);
   assert.match(js, /fetch\('\/api\/identity'/);
-  assert.match(js, /Identidad visual real detectada/);
+  assert.match(js, /Logo real detectado y cargado/);
 });
 
 test('overview usa información real ya existente y rail de observaciones', () => {
@@ -41,4 +41,23 @@ test('motor declara política measured-only sin simulación', () => {
   assert.match(engine, /simulated: false/);
   assert.match(engine, /policy: 'measured-only'/);
   assert.match(engine, /No se crean métricas, hallazgos ni porcentajes/);
+});
+
+
+test('loader 0.8.1 replica la composición profesional acordada sin datos ficticios', () => {
+  assert.match(html, /working-brand-lockup/);
+  assert.match(html, /id="workingElapsed"/);
+  assert.match(html, /orbit-n8/);
+  assert.match(html, /IDENTIDAD DEL SITIO/);
+  assert.match(html, /Sin simulación/);
+  assert.match(css, /body\[data-view="working"\]/);
+  assert.match(css, /min-height:100dvh/);
+  assert.match(js, /startWorkingTimer/);
+  assert.match(js, /Fallback textual del dominio/);
+});
+
+test('branding usa logo principal y símbolo CYBERGCODE con cache-busting', () => {
+  assert.match(html, /cybergcode-logo\.png\?v=0\.8\.1/);
+  assert.match(html, /cybergcode-symbol\.png\?v=0\.8\.1/);
+  assert.match(html, /ENGINE 0\.8\.1/);
 });
