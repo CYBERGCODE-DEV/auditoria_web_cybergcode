@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#070b12">
   <title>CYBERGCODE Web Audit Intelligence</title>
-  <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, estructura, imágenes, seguridad y diagnóstico técnico desde una sola URL.">
+  <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, DOM renderizado, imágenes, seguridad y accesibilidad desde una sola URL.">
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
@@ -15,14 +16,19 @@
       <span class="brand-mark">CG</span>
       <span><strong>CYBERGCODE</strong><small>WEB AUDIT INTELLIGENCE</small></span>
     </a>
-    <div class="version">ENGINE 0.1.0</div>
+    <div class="top-actions">
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema">
+        <span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span>
+      </button>
+      <div class="version">ENGINE 0.5.0</div>
+    </div>
   </header>
 
   <main>
     <section class="hero" id="hero">
-      <div class="eyebrow">AUDITORÍA TÉCNICA · SEO · SEGURIDAD</div>
+      <div class="eyebrow">AUDITORÍA TÉCNICA · SEO · RENDIMIENTO · SEGURIDAD</div>
       <h1>Una URL.<br><span>Un diagnóstico accionable.</span></h1>
-      <p class="lead">Analiza estructura HTML, SEO on-page, H1–H6, imágenes, enlaces, cabeceras de seguridad y estado técnico con evidencia verificable.</p>
+      <p class="lead">Analiza HTML inicial y DOM renderizado, SEO, H1–H6, imágenes, PageSpeed/Lighthouse, axe-core, colores calculados, responsive, seguridad pasiva e ISO Web Readiness con evidencia y solución verificable.</p>
 
       <form id="auditForm" class="audit-form">
         <label for="url" class="sr-only">Dominio o URL</label>
@@ -33,23 +39,25 @@
         </div>
         <div class="form-options">
           <label>Páginas <select id="maxPages"><option>5</option><option selected>12</option><option>25</option><option>50</option></select></label>
-          <span>Seguridad pasiva</span><span>Sin pruebas intrusivas</span><span>SSRF Guard</span>
+          <label class="check"><input id="pageSpeed" type="checkbox" checked> PageSpeed móvil + desktop</label>
+          <span>Seguridad pasiva</span><span>SSRF Guard</span>
         </div>
       </form>
 
       <div class="scope-grid">
-        <div><strong>HTTP</strong><span>estado, redirects, headers</span></div>
-        <div><strong>SEO</strong><span>title, description, canonical</span></div>
-        <div><strong>HEADINGS</strong><span>H1–H6 y jerarquía</span></div>
-        <div><strong>IMAGES</strong><span>alt, loading, dimensiones</span></div>
-        <div><strong>SECURITY</strong><span>HTTPS, CSP, HSTS, mixed</span></div>
-        <div><strong>SCHEMA</strong><span>JSON-LD y tipos detectados</span></div>
+        <div><strong>HTTP + SEO</strong><span>estado, redirects, title, canonical</span></div>
+        <div><strong>DOM RENDERIZADO</strong><span>Chromium, JavaScript y estructura final</span></div>
+        <div><strong>PERFORMANCE</strong><span>PageSpeed / Lighthouse móvil y desktop</span></div>
+        <div><strong>VISUAL</strong><span>colores, fuentes, contraste computado</span></div>
+        <div><strong>ACCESIBILIDAD</strong><span>axe-core, contraste, targets y WCAG automatizable</span></div>
+        <div><strong>SECURITY</strong><span>HTTPS, CSP, HSTS, mixed content</span></div>
+        <div><strong>ISO READINESS</strong><span>ISO/IEC 27001, 40500, 29184, 25010 y más</span></div>
       </div>
     </section>
 
     <section class="working hidden" id="working" aria-live="polite">
       <div class="radar"><i></i><i></i><i></i><b>CG</b></div>
-      <div><p class="eyebrow">PROCESANDO EN SERVIDOR</p><h2 id="workingTitle">Validando dominio y rastreando páginas</h2><p>No mostramos porcentajes simulados. El resultado aparecerá cuando el servidor complete esta fase.</p></div>
+      <div><p class="eyebrow">PROCESANDO EN SERVIDOR</p><h2 id="workingTitle">Rastreando, renderizando y midiendo</h2><p>El crawler, Chromium, axe-core y PageSpeed trabajan con datos reales. No mostramos porcentajes simulados.</p></div>
     </section>
 
     <section class="dashboard hidden" id="dashboard">
@@ -65,10 +73,52 @@
 
       <div class="stats" id="stats"></div>
 
+      <div class="metrics-grid" id="metricsGrid">
+        <article class="panel"><span>PAGESPEED MOBILE</span><h3>Rendimiento de laboratorio</h3><div id="mobileMetrics" class="metric-list"></div></article>
+        <article class="panel"><span>PAGESPEED DESKTOP</span><h3>Rendimiento de laboratorio</h3><div id="desktopMetrics" class="metric-list"></div></article>
+        <article class="panel"><span>DOM RENDERIZADO</span><h3>Chromium</h3><div id="browserMetrics" class="metric-list"></div></article>
+      </div>
+
+      <article class="panel visual-panel" id="visualPanel">
+        <div class="panel-head"><div><span>DISEÑO COMPUTADO</span><h3>Paleta, tipografías y capturas</h3></div></div>
+        <div class="visual-grid">
+          <div><h4>Paleta detectada</h4><div id="palette" class="palette"></div><h4>Tipografías</h4><div id="fonts" class="chip-list"></div></div>
+          <div class="shots"><figure><figcaption>Desktop</figcaption><img id="desktopShot" alt="Captura desktop de la web auditada"></figure><figure class="mobile-figure"><figcaption>Móvil</figcaption><img id="mobileShot" alt="Captura móvil de la web auditada"></figure></div>
+        </div>
+      </article>
+
+      <article class="panel infrastructure-panel" id="infrastructurePanel">
+        <div class="panel-head"><div><span>INFRAESTRUCTURA</span><h3>DNS, TLS, correo, cookies y terceros</h3></div></div>
+        <div class="infra-grid">
+          <div><h4>TLS / DNS</h4><div id="infraDns" class="metric-list"></div></div>
+          <div><h4>Seguridad de correo</h4><div id="infraEmail" class="metric-list"></div></div>
+          <div><h4>Cookies y terceros</h4><div id="infraBrowser" class="metric-list"></div></div>
+        </div>
+      </article>
+
+      <article class="panel peru-panel" id="peruPanel">
+        <div class="panel-head"><div><span>CUMPLIMIENTO Y CONFIANZA DIGITAL — PERÚ</span><h3>Privacidad, consumidor y comercio electrónico</h3></div></div>
+        <p class="legal-note">Evaluación de señales visibles. No constituye asesoría jurídica ni una declaración de infracción.</p>
+        <div id="peruSummary" class="iso-kpis"></div>
+        <div id="peruChecks" class="pe-checks"></div>
+      </article>
+
+      <article class="panel evidence-panel" id="evidencePanel">
+        <div class="panel-head"><div><span>ISO EVIDENCE CENTER</span><h3>Evidencia interna pendiente</h3></div><div id="evidenceProgress" class="evidence-progress"></div></div>
+        <p class="legal-note">Marca únicamente que la evidencia existe. La conformidad requiere revisión y validación documental.</p>
+        <div id="evidenceList" class="evidence-list"></div>
+      </article>
+
+      <article class="panel iso-panel" id="isoPanel">
+        <div class="panel-head"><div><span>ISO WEB READINESS</span><h3>Alineamiento observable y evidencia requerida</h3></div></div>
+        <div id="isoSummary" class="iso-summary"></div>
+        <div id="isoStandards" class="iso-standards"></div>
+      </article>
+
       <div class="content-grid">
         <article class="panel findings-panel">
           <div class="panel-head"><div><span>HALLAZGOS</span><h3>Prioridades y evidencia</h3></div><select id="severityFilter"><option value="all">Todos</option><option value="critical">Críticos</option><option value="high">Altos</option><option value="medium">Medios</option><option value="low">Bajos</option></select></div>
-          <div id="findingsList" class="findings-list"></div>
+          <p class="findings-help">Cada observación incluye evidencia, recomendación, solución, pasos y el criterio exacto para considerarla levantada.</p><div id="findingsList" class="findings-list"></div>
         </article>
         <aside>
           <article class="panel"><span>MÓDULOS</span><h3>Cobertura actual</h3><div id="modules" class="modules"></div></article>

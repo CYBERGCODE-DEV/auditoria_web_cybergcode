@@ -8,7 +8,8 @@ export default async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const url = body.url;
     const maxPages = Math.min(Math.max(Number(body.maxPages) || 12, 1), 50);
-    const result = await runAudit({ url, maxPages });
+    const pageSpeed = body.pageSpeed !== false;
+    const result = await runAudit({ url, maxPages, pageSpeed });
     return res.status(200).json(result);
   } catch (error) {
     console.error('[audit]', error);
