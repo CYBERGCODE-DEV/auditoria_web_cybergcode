@@ -6,6 +6,8 @@ const dashboard = $('#dashboard');
 const errorBox = $('#errorBox');
 const submitButton = form.querySelector('button[type="submit"]');
 let currentAudit = null;
+let currentCacheState = '—';
+const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 function syncThemeButton() {
   const button = $('#themeToggle');
@@ -25,12 +27,46 @@ $('#themeToggle')?.addEventListener('click', () => window.CGAuditTheme?.toggle?.
 const severityRank = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
 const labels = { security:'Seguridad', technical:'Técnico', seo:'SEO', images:'Imágenes', performance:'Rendimiento', content:'Contenido', accessibility:'Accesibilidad', ux:'UX / CRO', compliance:'ISO / Cumplimiento observable' };
 
+function activateDashboardTab(name = 'overview') {
+  document.querySelectorAll('.dashboard-tab').forEach((button) => {
+    const active = button.dataset.tab === name;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
+  document.querySelectorAll('.analysis-view').forEach((section) => {
+    const active = section.dataset.view === name;
+    section.classList.toggle('active', active);
+    section.hidden = !active;
+    if (active) {
+      section.querySelectorAll('.panel').forEach((panel, index) => panel.style.setProperty('--delay', `${Math.min(index, 10) * 55}ms`));
+    }
+  });
+}
+
+document.querySelectorAll('.dashboard-tab').forEach((button) => button.addEventListener('click', () => activateDashboardTab(button.dataset.tab)));
+
+function initRevealAnimations() {
+  const items = document.querySelectorAll('.reveal');
+  if (reduceMotion || !('IntersectionObserver' in window)) { items.forEach((item) => item.classList.add('visible')); return; }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.12 });
+  items.forEach((item) => observer.observe(item));
+}
+
 function view(name) {
   hero.classList.toggle('hidden', name !== 'hero');
   working.classList.toggle('hidden', name !== 'working');
   dashboard.classList.toggle('hidden', name !== 'dashboard');
   errorBox.classList.toggle('hidden', name !== 'error');
+  if (name === 'dashboard') activateDashboardTab('overview');
 }
+
+initRevealAnimations();
 
 function escapeHtml(value='') {
   return String(value).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -44,11 +80,45 @@ function formatBytes(value) {
   return `${value} B`;
 }
 
+function scoreAppearance(score) {
+  if (!Number.isFinite(score)) return { color:'var(--muted)', verdict:'Sin puntuación' };
+  if (score >= 90) return { color:'var(--success)', verdict:'Excelente' };
+  if (score >= 80) return { color:'var(--accent2)', verdict:'Muy bueno' };
+  if (score >= 70) return { color:'var(--accent)', verdict:'Bueno' };
+  if (score >= 55) return { color:'var(--warn)', verdict:'Mejorable' };
+  return { color:'var(--danger)', verdict:'Prioridad alta' };
+}
+
+function animateGlobalScore(value) {
+  const number = Number(value);
+  const scoreNode = $('#globalScore');
+  const ring = $('#scoreRing');
+  const verdict = $('#scoreVerdict');
+  if (!Number.isFinite(number)) {
+    scoreNode.textContent = 'N/D'; ring.style.setProperty('--score', 0); verdict.textContent = 'Sin puntuación'; return;
+  }
+  const appearance = scoreAppearance(number);
+  ring.style.setProperty('--score-color', appearance.color);
+  verdict.textContent = appearance.verdict;
+  if (reduceMotion) { scoreNode.textContent = String(Math.round(number)); ring.style.setProperty('--score', number); return; }
+  const started = performance.now();
+  const duration = 950;
+  const tick = (now) => {
+    const progress = Math.min(1, (now - started) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = number * eased;
+    scoreNode.textContent = String(Math.round(current));
+    ring.style.setProperty('--score', current.toFixed(2));
+    if (progress < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 function renderScores(audit) {
-  $('#globalScore').textContent = audit.scores.global ?? 'N/D';
+  animateGlobalScore(audit.scores.global);
   $('#methodology').textContent = audit.scores.methodology;
   $('#scoreCards').innerHTML = Object.entries(audit.scores.categories)
-    .map(([key,value]) => `<article class="panel score-card"><span>${escapeHtml(labels[key] || key)}</span><b>${value === null ? 'N/D' : value}</b><em>${value === null ? 'pendiente' : '/ 100'}</em></article>`).join('');
+    .map(([key,value], index) => `<article class="panel score-card" style="--delay:${index * 45}ms"><span>${escapeHtml(labels[key] || key)}</span><b>${value === null ? 'N/D' : value}</b><em>${value === null ? 'pendiente' : '/ 100'}</em><div class="score-bar"><i style="--bar:${value === null ? 0 : Math.max(0, Math.min(100, value))}%"></i></div></article>`).join('');
 }
 
 function renderStats(audit) {
@@ -56,17 +126,17 @@ function renderStats(audit) {
   const stats = [
     [s.severity.critical||0,'Críticos'],[s.severity.high||0,'Altos'],[s.severity.medium||0,'Medios'],[s.severity.low||0,'Bajos'],[s.pagesCrawled,'Páginas'],[s.images,'Imágenes']
   ];
-  $('#stats').innerHTML = stats.map(([value,label]) => `<div class="stat"><b>${value}</b><span>${label}</span></div>`).join('');
+  $('#stats').innerHTML = stats.map(([value,label], index) => `<div class="stat" style="--delay:${index * 45}ms"><b>${value}</b><span>${label}</span></div>`).join('');
 }
 
 function renderFindings(audit) {
   const filter = $('#severityFilter').value;
   const findings = [...audit.findings].filter(f => filter === 'all' || f.severity === filter).sort((a,b)=>severityRank[b.severity]-severityRank[a.severity]);
-  $('#findingsList').innerHTML = findings.length ? findings.map(f => {
+  $('#findingsList').innerHTML = findings.length ? findings.map((f, index) => {
     const steps = Array.isArray(f.remediationSteps) ? f.remediationSteps : [];
     const open = f.severity === 'critical' ? ' open' : '';
     return `
-    <details class="finding"${open}>
+    <details class="finding" style="--delay:${Math.min(index, 12) * 28}ms"${open}>
       <summary>
         <div class="finding-top"><span class="badge ${escapeHtml(f.severity)}">${escapeHtml(f.severity)}</span><span class="url">${escapeHtml(f.ruleId)} · confianza ${Math.round((f.confidence||0)*100)}%</span></div>
         <div class="finding-summary-title"><div><h4>${escapeHtml(f.title)}</h4><div class="url">${escapeHtml(f.url)}</div></div></div>
@@ -90,23 +160,25 @@ function renderFindings(audit) {
 }
 
 function metricRows(rows) {
-  return rows.map(([label,value,accent]) => `<div><span>${escapeHtml(label)}</span><b class="${accent || ''}">${escapeHtml(value)}</b></div>`).join('');
+  return rows.map(([label,value,accent], index) => `<div style="--delay:${index * 35}ms"><span>${escapeHtml(label)}</span><b class="${accent || ''}">${escapeHtml(value)}</b></div>`).join('');
 }
 
 function renderPageSpeed(audit) {
   const render = (data, selector) => {
     if (!data) { $(selector).innerHTML = '<p class="muted">No disponible en esta ejecución.</p>'; return; }
-    const c = data.categories || {}, m = data.metrics || {};
+    const c = data.categories || {}, m = data.metrics || {}, v = data.variability || {};
+    const performanceRange = v.performance?.range;
+    const lcpRange = v.lcpMs?.range;
     $(selector).innerHTML = metricRows([
-      ['Performance', c.performance == null ? 'N/D' : `${c.performance}/100`, 'accent-value'],
-      ['Accesibilidad', c.accessibility == null ? 'N/D' : `${c.accessibility}/100`],
-      ['SEO Lighthouse', c.seo == null ? 'N/D' : `${c.seo}/100`],
-      ['Best Practices', c.bestPractices == null ? 'N/D' : `${c.bestPractices}/100`],
+      ['Performance', c.performance == null ? 'N/D' : `${Math.round(c.performance)}/100`, 'accent-value'],
+      ['Accesibilidad', c.accessibility == null ? 'N/D' : `${Math.round(c.accessibility)}/100`],
+      ['SEO Lighthouse', c.seo == null ? 'N/D' : `${Math.round(c.seo)}/100`],
+      ['Best Practices', c.bestPractices == null ? 'N/D' : `${Math.round(c.bestPractices)}/100`],
       ['LCP', Number.isFinite(m.lcpMs) ? `${(m.lcpMs/1000).toFixed(2)} s` : 'N/D'],
       ['CLS', Number.isFinite(m.cls) ? m.cls.toFixed(3) : 'N/D'],
       ['TBT', formatMs(m.tbtMs)],
       ['FCP', Number.isFinite(m.fcpMs) ? `${(m.fcpMs/1000).toFixed(2)} s` : 'N/D']
-    ]);
+    ]) + `<div class="stability-line"><b>${data.sampleCount || 1} muestra(s) · ${escapeHtml(data.aggregation || 'single-run')}</b><br>Variación Performance: ${Number.isFinite(performanceRange) ? `${Math.round(performanceRange)} pt` : 'N/D'} · LCP: ${Number.isFinite(lcpRange) ? `${Math.round(lcpRange)} ms` : 'N/D'}</div>`;
   };
   render(audit.performance?.mobile, '#mobileMetrics');
   render(audit.performance?.desktop, '#desktopMetrics');
@@ -271,11 +343,26 @@ function renderIso(audit) {
     </details>`).join('');
 }
 
+function renderConsistency(audit) {
+  const c = audit.meta?.consistency || {};
+  const cacheLabels = { HIT:'Reutilizado · mismo resultado', STORED:'Guardado · 30 min', BYPASS:'Sin caché', '—':'Sin dato' };
+  $('#cacheStatus').textContent = cacheLabels[currentCacheState] || currentCacheState;
+  const rows = [
+    ['Modo', c.mode === 'stable' ? 'Estable' : 'En vivo'],
+    ['Perfil', c.profile || audit.browser?.auditProfile?.id || 'N/D'],
+    ['Huella', c.fingerprint || 'N/D'],
+    ['PageSpeed', c.pageSpeedAggregation || 'N/D'],
+    ['Zona horaria', c.timezone || 'N/D'],
+    ['Región función', c.functionRegion || 'N/D']
+  ];
+  $('#consistencyMetrics').innerHTML = rows.map(([label, value]) => `<div class="consistency-item"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></div>`).join('');
+}
+
 function renderAudit(audit) {
   currentAudit = audit;
   $('#targetName').textContent = new URL(audit.meta.target).hostname;
   $('#auditMeta').textContent = `${audit.meta.id} · ${audit.summary.pagesCrawled} páginas · ${audit.summary.findingsTotal ?? audit.findings.length} hallazgos${audit.summary.payloadTruncated ? ` (mostrando ${audit.summary.findingsReturned} prioritarios)` : ''} · ${new Date(audit.meta.finishedAt).toLocaleString('es-PE')}`;
-  renderScores(audit); renderStats(audit); renderPageSpeed(audit); renderBrowser(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit);
+  renderScores(audit); renderStats(audit); renderConsistency(audit); renderPageSpeed(audit); renderBrowser(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit);
   $('#modules').innerHTML = Object.entries(audit.modules).map(([key,value]) => `<div class="module"><b>${escapeHtml(key)}</b><span class="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join('');
   $('#pagesList').innerHTML = audit.pages.map(page => `<div class="page-row"><span title="${escapeHtml(page.url)}">${escapeHtml(new URL(page.url).pathname || '/')}</span><b>HTTP ${page.status}</b></div>`).join('');
 }
@@ -285,9 +372,10 @@ form.addEventListener('submit', async (event) => {
   submitButton.disabled = true;
   view('working');
   try {
-    const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url:$('#url').value, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked }) });
+    const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url:$('#url').value, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Error de auditoría.');
+    currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
     renderAudit(data); view('dashboard');
   } catch (error) {
     $('#errorText').textContent = error.message; view('error');

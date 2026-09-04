@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.6.0 - 2026-09-04
+
+- Rediseña el dashboard con **8 menús interactivos**: Resumen, Rendimiento, Diseño, Infraestructura, Perú, ISO, Observaciones y Páginas.
+- Añade animaciones de entrada por sección, tarjetas, estadísticas, filas y observaciones, respetando `prefers-reduced-motion`.
+- Sustituye la puntuación plana por un **anillo animado**, contador progresivo, color por nivel y barras por categoría.
+- Mejora la paleta de los temas claro/oscuro con acentos cyan, verde y violeta manteniendo contraste legible.
+- Normaliza la tipografía a unidades `rem`, base 16 px equivalente, `line-height: 1.6`, controles heredados y foco visible.
+- Corrige el footer mediante layout flex para que permanezca al fondo del viewport cuando el contenido es corto.
+- Añade **Modo estable** activado por defecto.
+- Chromium usa perfil fijo `CG-STABLE-1`, locale `es-PE`, zona `America/Lima`, UA fijo, cache desactivada y reduced motion.
+- El crawler ordena URLs de sitemap y enlaces internos para reducir diferencias por orden de descubrimiento.
+- PageSpeed ejecuta hasta **3 muestras mobile + 3 desktop** y usa la mediana para categorías y métricas.
+- El dashboard muestra número de muestras y rango de variación de Performance/LCP.
+- Añade Vercel Runtime Cache con compresión gzip durante 30 minutos para reutilizar exactamente la misma auditoría entre dispositivos.
+- Añade huella estable de auditoría y cabeceras `X-CYBERGCODE-Cache` / `X-CYBERGCODE-Stability`.
+- Fija la Function a la región `iad1` para reducir variación de infraestructura.
+- Añade `@vercel/functions 3.9.5`.
+- Amplía el PDF con perfil de consistencia, huella y agregación PageSpeed.
+- Aumenta la batería a **20 tests**.
+
 ## 0.5.0 - 2026-09-04
 
 - Añade auditoría de infraestructura de dominio: A, AAAA, NS, MX, CAA y DNSSEC.

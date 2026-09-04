@@ -14,7 +14,7 @@
     root.dataset.theme = value;
     if (persist) localStorage.setItem(STORAGE_KEY, value);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', value === 'light' ? '#f5f7fa' : '#070b12');
+    if (meta) meta.setAttribute('content', value === 'light' ? '#f5f8fc' : '#07111f');
     window.dispatchEvent(new CustomEvent('cybergcode-themechange', { detail: { theme: value } }));
     return value;
   };

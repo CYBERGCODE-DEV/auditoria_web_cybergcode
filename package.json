@@ -1,13 +1,13 @@
 {
   "name": "cybergcode-web-audit",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "description": "CYBERGCODE Web Audit Intelligence - auditoría web integral compatible con Vercel",
   "scripts": {
     "postinstall": "node scripts/build-chromium-pack.js",
     "dev": "npx vercel@latest dev",
-    "check": "node --check api/audit.js && node --check api/report.js && node --check lib/audit/engine.js && node --check lib/audit/finding.js && node --check lib/config/remediations.js && node --check lib/browser/browser.js && node --check lib/browser/browser-audit.js && node --check lib/performance/pagespeed.js && node --check lib/compliance/iso.js && node --check lib/compliance/peru.js && node --check lib/infrastructure/domain-audit.js && node --check lib/security/url-guard.js && node --check public/js/theme.js && node --check public/js/app.js",
+    "check": "node --check api/audit.js && node --check api/report.js && node --check lib/cache/audit-cache.js && node --check lib/audit/engine.js && node --check lib/audit/finding.js && node --check lib/config/remediations.js && node --check lib/browser/browser.js && node --check lib/browser/browser-audit.js && node --check lib/performance/pagespeed.js && node --check lib/compliance/iso.js && node --check lib/compliance/peru.js && node --check lib/infrastructure/domain-audit.js && node --check lib/security/url-guard.js && node --check public/js/theme.js && node --check public/js/app.js",
     "test": "node --test"
   },
   "engines": {
@@ -18,7 +18,8 @@
     "cheerio": "1.2.0",
     "pdf-lib": "1.17.1",
     "puppeteer-core": "25.1.0",
-    "axe-core": "4.13.0"
+    "axe-core": "4.13.0",
+    "@vercel/functions": "3.9.5"
   },
   "devDependencies": {
     "@sparticuz/chromium": "149.0.0",

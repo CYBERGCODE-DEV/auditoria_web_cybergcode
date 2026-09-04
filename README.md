@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.5.0
+# CYBERGCODE Web Audit Intelligence v0.6.0
 
 Auditoría web integral orientada a despliegue **GitHub -> Vercel**, desarrollada con HTML, CSS, JavaScript y Node.js/Vercel Functions.
 
@@ -6,7 +6,59 @@ Auditoría web integral orientada a despliegue **GitHub -> Vercel**, desarrollad
 **RUC:** 20615849988  
 **Dominio:** cybergcode.com
 
-## Qué cambia en V0.5
+## Qué cambia en V0.6
+
+V0.6 refuerza dos áreas: **experiencia visual del dashboard** y **reproducibilidad de resultados entre dispositivos**.
+
+### Dashboard por menús interactivos
+
+La auditoría se separa en ocho vistas:
+
+```text
+Resumen
+Rendimiento
+Diseño
+Infraestructura
+Perú
+ISO
+Observaciones
+Páginas
+```
+
+El cambio de menú utiliza transiciones accesibles, mantiene una sola sección visible y evita una página interminable. Las tarjetas, filas, hallazgos y secciones tienen animaciones escalonadas; `prefers-reduced-motion` desactiva el movimiento para usuarios que lo solicitan.
+
+### Puntuación animada y visual
+
+La puntuación global utiliza un anillo dinámico, contador progresivo y color por nivel. Las categorías incluyen barras animadas. No se modifica la metodología de scoring por motivos puramente visuales.
+
+### Tipografía y layout accesibles
+
+La base usa `1rem` (equivalente normal a 16 px), unidades escalables, `line-height: 1.6`, controles con tipografía heredada, foco visible y layouts flexibles. El footer usa `body` flex + `main { flex: 1 }` + `footer { margin-top: auto }`, por lo que permanece al final del viewport cuando el contenido es corto.
+
+### Modo estable entre dispositivos
+
+La diferencia entre dos auditorías puede deberse a condiciones variables de Lighthouse/PageSpeed, A/B tests, publicidad, recursos dinámicos, red y estado del servidor. V0.6 añade un modo estable activado por defecto:
+
+- perfil de Chromium fijo `CG-STABLE-1`;
+- `Accept-Language: es-PE`;
+- zona horaria `America/Lima`;
+- viewports fijos desktop 1366×768 y móvil 390×844;
+- caché del navegador desactivada;
+- `prefers-reduced-motion: reduce` en el navegador de auditoría;
+- crawler con orden lexicográfico determinista de URLs;
+- tres muestras PageSpeed por estrategia y **mediana**;
+- variabilidad de Performance/LCP visible en el dashboard;
+- Vercel Function fijada a `iad1`;
+- Vercel Runtime Cache durante 30 minutos;
+- huella de auditoría para comparar ejecuciones.
+
+Con el mismo dominio y la misma configuración, una auditoría cacheada conserva el mismo ID y la misma base de resultados entre dispositivos durante la ventana estable. El usuario puede desactivar `Modo estable` para solicitar una medición completamente en vivo.
+
+### Runtime Cache de Vercel
+
+V0.6 usa `@vercel/functions` y `getCache()` cuando se ejecuta en Vercel. El JSON se comprime con gzip antes de guardarse para respetar el límite por item del Runtime Cache. En desarrollo local se utiliza un fallback en memoria.
+
+## Cambios heredados de V0.5
 
 V0.5 añade una capa de **infraestructura y cumplimiento operativo**: DNS/TLS, seguridad de correo, cookies/trackers, Cumplimiento y Confianza Digital — Perú e ISO Evidence Center.
 
@@ -162,14 +214,15 @@ La salida registra:
 - Responsive móvil: overflow horizontal y targets pequeños.
 - Screenshots desktop y mobile comprimidos.
 - **axe-core** para accesibilidad automática adicional.
-- **PageSpeed Insights / Lighthouse** móvil y desktop.
+- **PageSpeed Insights / Lighthouse** móvil y desktop, con mediana de 3 muestras en modo estable.
 - LCP, CLS, TBT, FCP y puntuaciones de Performance, Accessibility, Best Practices y SEO de Lighthouse.
-- Dashboard con remediación expandible.
+- Dashboard por menús interactivos, animaciones accesibles, puntuación animada y remediación expandible.
 - PDF corporativo CYBERGCODE con solución y criterio de cierre por hallazgo.
 - DNS/TLS, SPF, DMARC, DKIM orientativo, DNSSEC, CAA, MTA-STS y TLS-RPT.
 - Cookies de Chromium y terceros/trackers de la visita inicial.
 - Cumplimiento y Confianza Digital — Perú.
 - ISO Evidence Center con estado local de evidencia disponible.
+- Modo estable, huella de auditoría y Runtime Cache compartida en Vercel.
 
 ## Pendiente / siguientes fases
 
@@ -203,6 +256,7 @@ puppeteer-core           25.1.0
 @sparticuz/chromium      149.0.0
 @sparticuz/chromium-min  149.0.0
 axe-core                 4.13.0
+@vercel/functions        3.9.5
 ```
 
 ## Despliegue GitHub -> Vercel
@@ -216,7 +270,14 @@ axe-core                 4.13.0
 7. Activa Fluid Compute en el proyecto si no estuviera activo.
 8. Despliega.
 
-El archivo `vercel.json` ya define hasta 300 segundos para `/api/audit.js`.
+El archivo `vercel.json` ya define hasta 300 segundos para `/api/audit.js` y fija la región de ejecución en `iad1` para reducir variación regional.
+
+## Validación actual
+
+```text
+20 / 20 tests passed
+npm run check passed
+```
 
 ## Variables de entorno
 
