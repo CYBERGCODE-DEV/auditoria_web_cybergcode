@@ -3,220 +3,210 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#07111f">
+  <meta name="theme-color" content="#061427">
   <title>CYBERGCODE Web Audit Intelligence</title>
   <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, seguridad, accesibilidad, ISO, infraestructura y cumplimiento desde una sola URL.">
+  <link rel="icon" href="/assets/cybergcode-logo.png" type="image/png">
   <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="/css/app.css">
 </head>
-<body>
-  <div class="noise" aria-hidden="true"></div>
+<body data-view="hero">
   <div class="ambient ambient-a" aria-hidden="true"></div>
   <div class="ambient ambient-b" aria-hidden="true"></div>
 
-  <header class="topbar">
-    <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
-      <span class="brand-mark" aria-hidden="true">CG</span>
-      <span><strong>CYBERGCODE</strong><small>WEB AUDIT INTELLIGENCE</small></span>
-    </a>
-    <div class="top-actions">
-      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema">
-        <span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span>
-      </button>
-      <div class="version">ENGINE 0.7.0</div>
-    </div>
-  </header>
-
-  <main>
-    <section class="hero" id="hero">
-      <div class="hero-copy reveal">
-        <div class="eyebrow">AUDITORÍA TÉCNICA · SEO · RENDIMIENTO · SEGURIDAD · ISO</div>
-        <h1>Una URL.<br><span>Un diagnóstico que se puede cerrar.</span></h1>
-        <p class="lead">Analiza evidencia técnica, DOM renderizado, rendimiento, accesibilidad, infraestructura, seguridad, cumplimiento e ISO Web Readiness. Cada observación incluye qué hacer, cómo corregirla y el criterio exacto para levantarla.</p>
-      </div>
-
-      <form id="auditForm" class="audit-form reveal" aria-describedby="stabilityHelp">
-        <label for="url" class="sr-only">Dominio o URL</label>
-        <div class="input-wrap">
-          <span class="protocol">HTTPS</span>
-          <input id="url" name="url" autocomplete="url" spellcheck="false" placeholder="ejemplo.com" required>
-          <button type="submit"><span>Analizar sitio</span><span aria-hidden="true">→</span></button>
-        </div>
-        <div class="form-options">
-          <label>Páginas <select id="maxPages" aria-label="Máximo de páginas"><option>5</option><option selected>12</option><option>25</option><option>50</option></select></label>
-          <label class="check"><input id="pageSpeed" type="checkbox" checked> PageSpeed móvil + desktop</label>
-          <label class="check stability-check"><input id="stableMode" type="checkbox" checked> Modo estable</label>
-          <span class="secure-label">Seguridad pasiva · SSRF Guard</span>
-        </div>
-        <p id="stabilityHelp" class="stability-help"><strong>Modo estable:</strong> perfil fijo, rastreo determinista, 3 muestras de PageSpeed con mediana y caché compartida de 30 min para igualar resultados entre dispositivos.</p>
-      </form>
-
-      <div class="scope-grid" aria-label="Cobertura del análisis">
-        <article class="scope-card reveal"><i>01</i><strong>HTTP + SEO</strong><span>estado, redirects, title, canonical, H1–H6</span></article>
-        <article class="scope-card reveal"><i>02</i><strong>DOM RENDERIZADO</strong><span>Chromium, JavaScript y estructura final</span></article>
-        <article class="scope-card reveal"><i>03</i><strong>PERFORMANCE</strong><span>PageSpeed / Lighthouse móvil y desktop</span></article>
-        <article class="scope-card reveal"><i>04</i><strong>VISUAL</strong><span>colores, fuentes, contraste y responsive</span></article>
-        <article class="scope-card reveal"><i>05</i><strong>ACCESIBILIDAD</strong><span>axe-core, WCAG automatizable y targets</span></article>
-        <article class="scope-card reveal"><i>06</i><strong>SECURITY</strong><span>HTTPS, CSP, HSTS, DNS, TLS y correo</span></article>
-        <article class="scope-card reveal"><i>07</i><strong>ISO READINESS</strong><span>alineamiento observable + evidencias pendientes</span></article>
-        <article class="scope-card reveal"><i>08</i><strong>PERÚ</strong><span>privacidad, consumidor y confianza digital</span></article>
-      </div>
-    </section>
-
-    <section class="working hidden" id="working" aria-live="polite">
-      <div class="radar" aria-hidden="true"><i></i><i></i><i></i><b>CG</b></div>
-      <div class="working-copy">
-        <p class="eyebrow">PROCESANDO EN SERVIDOR</p>
-        <h2 id="workingTitle">Rastreando, renderizando y midiendo</h2>
-        <p>La auditoría utiliza un perfil fijo. En modo estable, PageSpeed se ejecuta varias veces y se toma la mediana; no se muestran porcentajes simulados.</p>
-        <div class="working-points" aria-hidden="true">
-          <span>HTTP / SEO</span><span>Chromium</span><span>PageSpeed</span><span>Seguridad</span><span>ISO</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="dashboard hidden" id="dashboard">
-      <div class="dashboard-head reveal">
-        <div><p class="eyebrow">AUDITORÍA COMPLETADA</p><h2 id="targetName">—</h2><p id="auditMeta" class="muted"></p></div>
-        <div class="actions"><button id="newAudit" class="ghost">Nueva auditoría</button><button id="exportPdf">Exportar PDF</button></div>
-      </div>
-
-      <nav class="dashboard-nav" aria-label="Secciones de la auditoría" role="tablist">
-        <button class="dashboard-tab active" type="button" role="tab" aria-selected="true" data-tab="overview">Resumen</button>
-        <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="seo">SEO</button>
-        <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="headings">H1–H6</button>
-        <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="pages">Páginas</button>
-        <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="images">Imágenes</button>
-        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="performance">Rendimiento</button>
-        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="visual">Diseño</button>
-        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="infrastructure">Seguridad</button>
-        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="peru">Perú</button>
-        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="iso">ISO</button>
-        <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="findings">Observaciones</button>
+  <div class="app-shell">
+    <aside class="app-sidebar" id="appSidebar" aria-label="Navegación principal">
+      <a class="sidebar-brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
+        <img src="/assets/cybergcode-logo.png" alt="CYBERGCODE Web Audit Intelligence">
+      </a>
+      <nav class="sidebar-nav">
+        <button type="button" data-jump-tab="overview"><span>⌂</span>Resumen</button>
+        <button type="button" class="active" data-jump-tab="overview"><span>▣</span>Auditorías</button>
+        <button type="button" data-jump-tab="seo"><span>⌕</span>SEO</button>
+        <button type="button" data-jump-tab="headings"><span>H</span>H1–H6</button>
+        <button type="button" data-jump-tab="pages"><span>▤</span>Páginas</button>
+        <button type="button" data-jump-tab="images"><span>▧</span>Imágenes</button>
+        <button type="button" data-jump-tab="performance"><span>↗</span>Rendimiento</button>
+        <button type="button" data-jump-tab="findings"><span>!</span>Observaciones</button>
       </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-trust">
+        <strong>Datos reales</strong>
+        <p>La interfaz solo muestra resultados medidos o evidencia disponible. Los módulos no ejecutados no reciben una nota inventada.</p>
+        <span>Sin simulación</span>
+      </div>
+      <div class="sidebar-company"><span class="sidebar-avatar">CG</span><div><strong>CYBERGCODE</strong><small>Web Audit Intelligence</small></div></div>
+    </aside>
 
-      <section class="analysis-view active" data-view="overview" role="tabpanel">
-        <div class="score-layout">
-          <article class="global-score panel score-hero">
-            <span>PUNTUACIÓN MEDIDA</span>
-            <div class="score-ring" id="scoreRing" style="--score:0;--score-color:var(--accent)">
-              <div class="score-ring-inner"><strong id="globalScore">—</strong><small>/100</small></div>
+    <div class="app-column">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
+          <img src="/assets/cybergcode-logo.png" alt="CYBERGCODE Web Audit Intelligence">
+        </a>
+        <div class="top-actions">
+          <span class="real-data-badge"><i></i>Datos reales · sin simulación</span>
+          <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema"><span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span></button>
+          <div class="version">ENGINE 0.8.0</div>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" id="hero">
+          <div class="hero-copy reveal">
+            <div class="eyebrow">AUDITORÍA WEB INTELIGENTE · EVIDENCIA REAL</div>
+            <h1>Una URL.<br><span>Un diagnóstico accionable.</span></h1>
+            <p class="lead">Rastreo, SEO, H1–H6, DOM renderizado, imágenes, rendimiento, accesibilidad, seguridad, infraestructura, cumplimiento e ISO Readiness. Cada observación explica qué se detectó, cómo corregirlo y cuándo puede considerarse cerrada.</p>
+          </div>
+
+          <form id="auditForm" class="audit-form reveal" aria-describedby="stabilityHelp">
+            <label for="url" class="sr-only">Dominio o URL</label>
+            <div class="input-wrap">
+              <span class="protocol">HTTPS</span>
+              <input id="url" name="url" autocomplete="url" spellcheck="false" placeholder="ejemplo.com" required>
+              <button type="submit"><span>Analizar sitio</span><span aria-hidden="true">→</span></button>
             </div>
-            <div class="score-verdict" id="scoreVerdict">Calculando nivel</div>
-            <p id="methodology"></p>
-          </article>
-          <div class="score-cards" id="scoreCards"></div>
-        </div>
-        <div class="stats" id="stats"></div>
-        <article class="panel consistency-panel">
-          <div class="panel-head"><div><span>CONSISTENCIA DEL ANÁLISIS</span><h3>Perfil reproducible entre dispositivos</h3></div><span class="status-pill" id="cacheStatus">—</span></div>
-          <div id="consistencyMetrics" class="consistency-grid"></div>
-          <p class="legal-note">Las métricas de laboratorio nunca son matemáticamente idénticas para siempre: una web puede cambiar, usar A/B tests, anuncios o recursos dinámicos. El modo estable reduce la variación y reutiliza temporalmente la misma auditoría.</p>
-        </article>
-      </section>
+            <div class="form-options">
+              <label>Páginas <select id="maxPages" aria-label="Máximo de páginas"><option>5</option><option selected>12</option><option>25</option><option>50</option></select></label>
+              <label class="check"><input id="pageSpeed" type="checkbox" checked> PageSpeed móvil + desktop</label>
+              <label class="check stability-check"><input id="stableMode" type="checkbox" checked> Modo estable</label>
+              <span class="secure-label">Seguridad pasiva · SSRF Guard</span>
+            </div>
+            <p id="stabilityHelp" class="stability-help"><strong>Modo estable:</strong> perfil fijo, rastreo determinista, mediana de PageSpeed y caché compartida para reducir variaciones entre dispositivos.</p>
+          </form>
 
-      <section class="analysis-view" data-view="seo" role="tabpanel" hidden>
-        <div class="section-intro"><div><span>SEO TÉCNICO Y ON-PAGE</span><h3>Qué encuentra el dominio, qué falta y en qué URL</h3></div><p>Datos reales extraídos del HTML de cada página rastreada.</p></div>
-        <div class="seo-kpis" id="seoKpis"></div>
-        <div class="seo-core-grid">
-          <article class="panel"><span>DOMINIO E INDEXABILIDAD</span><h3>Robots, sitemap y cobertura</h3><div id="seoDomain" class="metric-list"></div></article>
-          <article class="panel"><span>ENLACES Y SCHEMA</span><h3>Arquitectura detectada</h3><div id="seoLinks" class="metric-list"></div><div id="seoSchema" class="chip-list"></div></article>
-        </div>
-        <article class="panel seo-table-panel"><div class="panel-head"><div><span>METADATOS POR URL</span><h3>Title, description, canonical, robots y H1</h3></div></div><div class="table-scroll"><table class="audit-table"><thead><tr><th>URL</th><th>HTTP</th><th>Title</th><th>Description</th><th>Canonical</th><th>Robots</th><th>H1</th><th>Palabras</th></tr></thead><tbody id="seoMetaTable"></tbody></table></div></article>
-        <article class="panel"><div class="panel-head"><div><span>DUPLICADOS Y COBERTURA</span><h3>Problemas que afectan varias páginas</h3></div></div><div id="seoDuplicateGroups" class="duplicate-groups"></div></article>
-      </section>
-
-      <section class="analysis-view" data-view="headings" role="tabpanel" hidden>
-        <div class="section-intro"><div><span>ESTRUCTURA H1–H6</span><h3>Jerarquía semántica completa del sitio</h3></div><p>Selecciona una página para inspeccionar todos sus encabezados.</p></div>
-        <div class="heading-kpis" id="headingKpis"></div>
-        <article class="panel heading-explorer">
-          <div class="panel-head"><div><span>EXPLORADOR DE ENCABEZADOS</span><h3 id="headingPageTitle">—</h3></div><select id="headingPageSelect" aria-label="Seleccionar página"></select></div>
-          <div id="headingTree" class="heading-tree"></div>
-        </article>
-        <article class="panel"><div class="panel-head"><div><span>MATRIZ POR PÁGINA</span><h3>Cuántos H1, H2, H3, H4, H5 y H6 tiene cada URL</h3></div></div><div class="table-scroll"><table class="audit-table heading-matrix"><thead><tr><th>URL</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H1 principal</th></tr></thead><tbody id="headingMatrix"></tbody></table></div></article>
-      </section>
-
-      <section class="analysis-view" data-view="images" role="tabpanel" hidden>
-        <div class="section-intro"><div><span>IMÁGENES</span><h3>ALT, dimensiones, lazy loading y ubicación</h3></div><p>Inventario real de las imágenes encontradas en las páginas rastreadas.</p></div>
-        <div class="image-kpis" id="imageKpis"></div>
-        <article class="panel"><div class="panel-head"><div><span>INVENTARIO</span><h3>Imágenes inspeccionadas</h3></div></div><div class="table-scroll"><table class="audit-table"><thead><tr><th>Página</th><th>Imagen</th><th>ALT</th><th>Dimensiones</th><th>Loading</th><th>Srcset</th></tr></thead><tbody id="imagesTable"></tbody></table></div></article>
-      </section>
-
-      <section class="analysis-view" data-view="performance" role="tabpanel" hidden>
-        <div class="section-intro"><div><span>RENDIMIENTO</span><h3>Laboratorio, estabilidad y Core Web Vitals</h3></div><p>Se muestran medianas cuando el modo estable está activo.</p></div>
-        <div class="metrics-grid" id="metricsGrid">
-          <article class="panel"><span>PAGESPEED MOBILE</span><h3>Rendimiento de laboratorio</h3><div id="mobileMetrics" class="metric-list"></div></article>
-          <article class="panel"><span>PAGESPEED DESKTOP</span><h3>Rendimiento de laboratorio</h3><div id="desktopMetrics" class="metric-list"></div></article>
-          <article class="panel"><span>DOM RENDERIZADO</span><h3>Chromium estable</h3><div id="browserMetrics" class="metric-list"></div></article>
-        </div>
-      </section>
-
-      <section class="analysis-view" data-view="visual" role="tabpanel" hidden>
-        <article class="panel visual-panel" id="visualPanel">
-          <div class="panel-head"><div><span>DISEÑO COMPUTADO</span><h3>Paleta, tipografías, contraste y capturas</h3></div></div>
-          <div class="visual-grid">
-            <div><h4>Paleta detectada</h4><div id="palette" class="palette"></div><h4>Tipografías</h4><div id="fonts" class="chip-list"></div></div>
-            <div class="shots"><figure><figcaption>Desktop</figcaption><img id="desktopShot" alt="Captura desktop de la web auditada"></figure><figure class="mobile-figure"><figcaption>Móvil</figcaption><img id="mobileShot" alt="Captura móvil de la web auditada"></figure></div>
+          <div class="scope-grid" aria-label="Cobertura del análisis">
+            <article class="scope-card reveal"><i>01</i><strong>HTTP + SEO</strong><span>estado, redirects, title, canonical, robots, sitemap</span></article>
+            <article class="scope-card reveal"><i>02</i><strong>H1–H6 + CONTENIDO</strong><span>jerarquía semántica, palabras, párrafos y duplicados</span></article>
+            <article class="scope-card reveal"><i>03</i><strong>DOM RENDERIZADO</strong><span>Chromium, JavaScript, screenshots, cookies y recursos</span></article>
+            <article class="scope-card reveal"><i>04</i><strong>IMÁGENES + VISUAL</strong><span>ALT, dimensiones, lazy, colores, fuentes y contraste</span></article>
+            <article class="scope-card reveal"><i>05</i><strong>PERFORMANCE</strong><span>PageSpeed / Lighthouse móvil y desktop cuando está disponible</span></article>
+            <article class="scope-card reveal"><i>06</i><strong>SEGURIDAD</strong><span>HTTPS, headers, DNS, TLS, correo y terceros</span></article>
+            <article class="scope-card reveal"><i>07</i><strong>ACCESIBILIDAD</strong><span>axe-core, WCAG automatizable y revisión manual pendiente</span></article>
+            <article class="scope-card reveal"><i>08</i><strong>ISO + PERÚ</strong><span>alineamiento observable, privacidad y evidencias internas</span></article>
           </div>
-        </article>
-      </section>
+        </section>
 
-      <section class="analysis-view" data-view="infrastructure" role="tabpanel" hidden>
-        <article class="panel infrastructure-panel" id="infrastructurePanel">
-          <div class="panel-head"><div><span>INFRAESTRUCTURA</span><h3>DNS, TLS, correo, cookies y terceros</h3></div></div>
-          <div class="infra-grid">
-            <div><h4>TLS / DNS</h4><div id="infraDns" class="metric-list"></div></div>
-            <div><h4>Seguridad de correo</h4><div id="infraEmail" class="metric-list"></div></div>
-            <div><h4>Cookies y terceros</h4><div id="infraBrowser" class="metric-list"></div></div>
+        <section class="working hidden" id="working" aria-live="polite">
+          <div class="working-shell">
+            <div class="working-side working-left">
+              <img class="working-brand" src="/assets/cybergcode-logo.png" alt="CYBERGCODE">
+              <p class="eyebrow">AUDITORÍA EN PROCESO</p>
+              <h2>Analizando<br><span id="workingDomain">—</span></h2>
+              <p>Extrayendo y procesando datos reales del sitio. No se muestra un porcentaje inventado: el indicador permanece activo hasta recibir el resultado del servidor.</p>
+              <div class="working-live-list">
+                <div><i></i><span>Conectando al dominio y validando acceso seguro</span></div>
+                <div><i></i><span>Rastreando HTML, metadatos, enlaces e imágenes</span></div>
+                <div><i></i><span>Ejecutando módulos disponibles en servidor</span></div>
+              </div>
+            </div>
+
+            <div class="working-orbit" aria-label="Estado de la auditoría">
+              <div class="orbit-ring orbit-ring-a"></div><div class="orbit-ring orbit-ring-b"></div><div class="orbit-ring orbit-ring-c"></div>
+              <div class="working-site-logo" id="workingSiteLogoWrap">
+                <img id="workingSiteLogo" alt="Logo del sitio analizado" hidden>
+                <span id="workingSiteFallback">WEB</span>
+              </div>
+              <div class="orbit-status orbit-top"><b>HTTP + SEO</b><span>Procesando</span></div>
+              <div class="orbit-status orbit-right"><b>DOM</b><span>En cola</span></div>
+              <div class="orbit-status orbit-bottom"><b>Seguridad</b><span>En cola</span></div>
+              <div class="orbit-status orbit-left"><b>Imágenes</b><span>En cola</span></div>
+              <div class="working-server-state"><strong>Procesando en servidor</strong><span class="loading-dots"><i></i><i></i><i></i></span></div>
+            </div>
+
+            <div class="working-side working-right">
+              <span class="eyebrow">DATOS EN TIEMPO REAL</span>
+              <div id="identityStatus" class="identity-status"><i></i><span>Detectando identidad visual del sitio…</span></div>
+              <div class="working-step active"><i></i>Conexión segura</div>
+              <div class="working-step"><i></i>Estructura HTML y SEO</div>
+              <div class="working-step"><i></i>DOM, recursos y accesibilidad</div>
+              <div class="working-step"><i></i>Seguridad e infraestructura</div>
+              <div class="working-step"><i></i>Consolidación del informe</div>
+              <div class="working-note">Los estados representan fases del proceso; no una estimación ficticia del porcentaje.</div>
+            </div>
           </div>
-        </article>
-      </section>
+          <div class="working-strip"><span><b>Modo</b> estable</span><span><b>Perfil</b> CG-STABLE-1</span><span><b>Zona horaria</b> America/Lima</span><span><b>Cache</b> 30 min</span></div>
+        </section>
 
-      <section class="analysis-view" data-view="peru" role="tabpanel" hidden>
-        <article class="panel peru-panel" id="peruPanel">
-          <div class="panel-head"><div><span>CUMPLIMIENTO Y CONFIANZA DIGITAL — PERÚ</span><h3>Privacidad, consumidor y comercio electrónico</h3></div></div>
-          <p class="legal-note">Evaluación de señales visibles. No constituye asesoría jurídica ni una declaración de infracción.</p>
-          <div id="peruSummary" class="iso-kpis"></div>
-          <div id="peruChecks" class="pe-checks"></div>
-        </article>
-      </section>
+        <section class="dashboard hidden" id="dashboard">
+          <div class="dashboard-head reveal">
+            <div class="dashboard-title-block"><p class="eyebrow">AUDITORÍA COMPLETADA</p><h2 id="targetName">—</h2><p id="auditMeta" class="muted"></p></div>
+            <div class="actions"><button id="newAudit" class="ghost">Nueva auditoría</button><button id="exportPdf">Exportar PDF</button></div>
+          </div>
 
-      <section class="analysis-view" data-view="iso" role="tabpanel" hidden>
-        <article class="panel evidence-panel" id="evidencePanel">
-          <div class="panel-head"><div><span>ISO EVIDENCE CENTER</span><h3>Evidencia interna pendiente</h3></div><div id="evidenceProgress" class="evidence-progress"></div></div>
-          <p class="legal-note">Marca únicamente que la evidencia existe. La conformidad requiere revisión y validación documental.</p>
-          <div id="evidenceList" class="evidence-list"></div>
-        </article>
-        <article class="panel iso-panel" id="isoPanel">
-          <div class="panel-head"><div><span>ISO WEB READINESS</span><h3>Alineamiento observable y evidencia requerida</h3></div></div>
-          <div id="isoSummary" class="iso-summary"></div>
-          <div id="isoStandards" class="iso-standards"></div>
-        </article>
-      </section>
+          <nav class="dashboard-nav" aria-label="Secciones de la auditoría" role="tablist">
+            <button class="dashboard-tab active" type="button" role="tab" aria-selected="true" data-tab="overview">Resumen</button>
+            <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="seo">SEO</button>
+            <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="headings">H1–H6</button>
+            <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="pages">Páginas</button>
+            <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="images">Imágenes</button>
+            <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="performance">Rendimiento</button>
+            <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="visual">Diseño</button>
+            <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="infrastructure">Seguridad</button>
+            <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="peru">Perú</button>
+            <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="iso">ISO</button>
+            <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="findings">Observaciones</button>
+          </nav>
 
-      <section class="analysis-view" data-view="findings" role="tabpanel" hidden>
-        <article class="panel findings-panel">
-          <div class="panel-head"><div><span>OBSERVACIONES</span><h3>Prioridades, solución y criterio de cierre</h3></div><select id="severityFilter"><option value="all">Todos</option><option value="critical">Críticos</option><option value="high">Altos</option><option value="medium">Medios</option><option value="low">Bajos</option></select></div>
-          <p class="findings-help">Cada observación incluye evidencia, recomendación, solución, pasos y el criterio exacto para considerarla levantada.</p>
-          <div id="findingsList" class="findings-list"></div>
-        </article>
-      </section>
+          <section class="analysis-view active" data-view="overview" role="tabpanel">
+            <div class="overview-grid">
+              <div class="overview-main">
+                <div class="score-layout">
+                  <article class="global-score panel score-hero"><span>PUNTUACIÓN GENERAL</span><div class="score-ring" id="scoreRing" style="--score:0;--score-color:var(--accent)"><div class="score-ring-inner"><strong id="globalScore">—</strong><small>/100</small></div></div><div class="score-verdict" id="scoreVerdict">Calculando nivel</div><p id="methodology"></p></article>
+                  <div class="score-cards" id="scoreCards"></div>
+                </div>
+                <div class="stats" id="stats"></div>
+                <div class="overview-core-grid">
+                  <article class="panel"><div class="panel-head"><div><span>SEO TÉCNICO Y ON-PAGE</span><h3>Lo esencial del dominio</h3></div><button class="mini-action" data-open-tab="seo">Ver SEO</button></div><div id="overviewSeoSnapshot" class="metric-list"></div></article>
+                  <article class="panel"><div class="panel-head"><div><span>H1–H6</span><h3>Jerarquía semántica</h3></div><button class="mini-action" data-open-tab="headings">Ver headings</button></div><div id="overviewHeadingSnapshot" class="heading-summary"></div><div id="overviewHeadingNote" class="overview-note"></div></article>
+                </div>
+                <article class="panel overview-pages"><div class="panel-head"><div><span>PÁGINAS ANALIZADAS</span><h3>Matriz H1–H6 por URL</h3></div><button class="mini-action" data-open-tab="pages">Ver todas</button></div><div class="table-scroll"><table class="audit-table compact-table"><thead><tr><th>URL</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H1 principal</th></tr></thead><tbody id="overviewPagesTable"></tbody></table></div></article>
+              </div>
+              <aside class="overview-rail">
+                <article class="panel"><div class="panel-head"><div><span>OBSERVACIONES PRINCIPALES</span><h3>Prioridad inmediata</h3></div><button class="mini-action" data-open-tab="findings">Ver todas</button></div><div id="topFindings" class="top-findings"></div></article>
+                <article class="panel"><span>INFORMACIÓN DE LA AUDITORÍA</span><div id="auditInfo" class="metric-list"></div></article>
+                <article class="panel consistency-panel"><div class="panel-head"><div><span>CONSISTENCIA</span><h3>Perfil reproducible</h3></div><span class="status-pill" id="cacheStatus">—</span></div><div id="consistencyMetrics" class="consistency-grid"></div></article>
+              </aside>
+            </div>
+          </section>
 
-      <section class="analysis-view" data-view="pages" role="tabpanel" hidden>
-        <div class="pages-grid">
-          <article class="panel"><span>MÓDULOS</span><h3>Cobertura actual</h3><div id="modules" class="modules"></div></article>
-          <article class="panel"><span>PÁGINAS</span><h3>Ficha SEO por URL</h3><p class="legal-note">Abre una página para ver metadatos y estructura H1–H6 detectada.</p><div id="pagesList" class="pages-list page-details-list"></div></article>
-        </div>
-      </section>
-    </section>
+          <section class="analysis-view" data-view="seo" role="tabpanel" hidden>
+            <div class="section-intro"><div><span>SEO TÉCNICO Y ON-PAGE</span><h3>Qué encuentra el dominio, qué falta y en qué URL</h3></div><p>Datos extraídos del HTML rastreado; las heurísticas se identifican como tales.</p></div>
+            <div class="seo-kpis" id="seoKpis"></div>
+            <div class="seo-core-grid"><article class="panel"><span>DOMINIO E INDEXABILIDAD</span><h3>Robots, sitemap y cobertura</h3><div id="seoDomain" class="metric-list"></div></article><article class="panel"><span>ENLACES Y SCHEMA</span><h3>Arquitectura detectada</h3><div id="seoLinks" class="metric-list"></div><div id="seoSchema" class="chip-list"></div></article></div>
+            <article class="panel seo-table-panel"><div class="panel-head"><div><span>METADATOS POR URL</span><h3>Title, description, canonical, robots y H1</h3></div></div><div class="table-scroll"><table class="audit-table"><thead><tr><th>URL</th><th>HTTP</th><th>Title</th><th>Description</th><th>Canonical</th><th>Robots</th><th>H1</th><th>Palabras</th></tr></thead><tbody id="seoMetaTable"></tbody></table></div></article>
+            <article class="panel"><div class="panel-head"><div><span>DUPLICADOS Y COBERTURA</span><h3>Problemas que afectan varias páginas</h3></div></div><div id="seoDuplicateGroups" class="duplicate-groups"></div></article>
+          </section>
 
-    <section class="error-box hidden" id="errorBox" role="alert"><strong>No se pudo completar la auditoría</strong><p id="errorText"></p><button id="retryButton" class="ghost">Volver</button></section>
-  </main>
+          <section class="analysis-view" data-view="headings" role="tabpanel" hidden>
+            <div class="section-intro"><div><span>ESTRUCTURA H1–H6</span><h3>Jerarquía semántica completa del sitio</h3></div><p>Selecciona una página para inspeccionar todos sus encabezados.</p></div>
+            <div class="heading-kpis" id="headingKpis"></div>
+            <article class="panel heading-explorer"><div class="panel-head"><div><span>EXPLORADOR DE ENCABEZADOS</span><h3 id="headingPageTitle">—</h3></div><select id="headingPageSelect" aria-label="Seleccionar página"></select></div><div id="headingTree" class="heading-tree"></div></article>
+            <article class="panel"><div class="panel-head"><div><span>MATRIZ POR PÁGINA</span><h3>Cuántos H1, H2, H3, H4, H5 y H6 tiene cada URL</h3></div></div><div class="table-scroll"><table class="audit-table heading-matrix"><thead><tr><th>URL</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H1 principal</th></tr></thead><tbody id="headingMatrix"></tbody></table></div></article>
+          </section>
 
-  <footer>
-    <span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span>
-    <span>cybergcode.com · Lambayeque, Perú</span>
-  </footer>
+          <section class="analysis-view" data-view="pages" role="tabpanel" hidden><div class="pages-grid"><article class="panel"><span>MÓDULOS</span><h3>Cobertura real</h3><div id="modules" class="modules"></div></article><article class="panel"><span>PÁGINAS</span><h3>Ficha SEO por URL</h3><p class="legal-note">Abre una página para ver los valores realmente detectados.</p><div id="pagesList" class="pages-list page-details-list"></div></article></div></section>
+
+          <section class="analysis-view" data-view="images" role="tabpanel" hidden><div class="section-intro"><div><span>IMÁGENES</span><h3>ALT, dimensiones, lazy loading y ubicación</h3></div><p>Inventario real de las imágenes encontradas en las páginas rastreadas.</p></div><div class="image-kpis" id="imageKpis"></div><article class="panel"><div class="panel-head"><div><span>INVENTARIO</span><h3>Imágenes inspeccionadas</h3></div></div><div class="table-scroll"><table class="audit-table"><thead><tr><th>Página</th><th>Imagen</th><th>ALT</th><th>Dimensiones</th><th>Loading</th><th>Srcset</th></tr></thead><tbody id="imagesTable"></tbody></table></div></article></section>
+
+          <section class="analysis-view" data-view="performance" role="tabpanel" hidden><div class="section-intro"><div><span>RENDIMIENTO</span><h3>Laboratorio, estabilidad y Core Web Vitals</h3></div><p>Solo se muestran métricas cuando la fuente responde correctamente.</p></div><div class="metrics-grid" id="metricsGrid"><article class="panel"><span>PAGESPEED MOBILE</span><h3>Rendimiento de laboratorio</h3><div id="mobileMetrics" class="metric-list"></div></article><article class="panel"><span>PAGESPEED DESKTOP</span><h3>Rendimiento de laboratorio</h3><div id="desktopMetrics" class="metric-list"></div></article><article class="panel"><span>DOM RENDERIZADO</span><h3>Chromium estable</h3><div id="browserMetrics" class="metric-list"></div></article></div></section>
+
+          <section class="analysis-view" data-view="visual" role="tabpanel" hidden><article class="panel visual-panel" id="visualPanel"><div class="panel-head"><div><span>DISEÑO COMPUTADO</span><h3>Paleta, tipografías, contraste y capturas</h3></div></div><div class="visual-grid"><div><h4>Paleta detectada</h4><div id="palette" class="palette"></div><h4>Tipografías</h4><div id="fonts" class="chip-list"></div></div><div class="shots"><figure><figcaption>Desktop</figcaption><img id="desktopShot" alt="Captura desktop de la web auditada"></figure><figure class="mobile-figure"><figcaption>Móvil</figcaption><img id="mobileShot" alt="Captura móvil de la web auditada"></figure></div></div></article></section>
+
+          <section class="analysis-view" data-view="infrastructure" role="tabpanel" hidden><article class="panel infrastructure-panel" id="infrastructurePanel"><div class="panel-head"><div><span>SEGURIDAD E INFRAESTRUCTURA</span><h3>DNS, TLS, correo, cookies y terceros</h3></div></div><div class="infra-grid"><div><h4>TLS / DNS</h4><div id="infraDns" class="metric-list"></div></div><div><h4>Seguridad de correo</h4><div id="infraEmail" class="metric-list"></div></div><div><h4>Cookies y terceros</h4><div id="infraBrowser" class="metric-list"></div></div></div></article></section>
+
+          <section class="analysis-view" data-view="peru" role="tabpanel" hidden><article class="panel peru-panel" id="peruPanel"><div class="panel-head"><div><span>CUMPLIMIENTO Y CONFIANZA DIGITAL — PERÚ</span><h3>Privacidad, consumidor y comercio electrónico</h3></div></div><p class="legal-note">Evaluación de señales visibles. No constituye asesoría jurídica ni una declaración de infracción.</p><div id="peruSummary" class="iso-kpis"></div><div id="peruChecks" class="pe-checks"></div></article></section>
+
+          <section class="analysis-view" data-view="iso" role="tabpanel" hidden><article class="panel evidence-panel" id="evidencePanel"><div class="panel-head"><div><span>ISO EVIDENCE CENTER</span><h3>Evidencia interna pendiente</h3></div><div id="evidenceProgress" class="evidence-progress"></div></div><p class="legal-note">Marcar evidencia disponible no equivale a validarla ni a certificar conformidad.</p><div id="evidenceList" class="evidence-list"></div></article><article class="panel iso-panel" id="isoPanel"><div class="panel-head"><div><span>ISO WEB READINESS</span><h3>Alineamiento observable y evidencia requerida</h3></div></div><div id="isoSummary" class="iso-summary"></div><div id="isoStandards" class="iso-standards"></div></article></section>
+
+          <section class="analysis-view" data-view="findings" role="tabpanel" hidden><article class="panel findings-panel"><div class="panel-head"><div><span>OBSERVACIONES</span><h3>Prioridades, solución y criterio de cierre</h3></div><select id="severityFilter"><option value="all">Todos</option><option value="critical">Críticos</option><option value="high">Altos</option><option value="medium">Medios</option><option value="low">Bajos</option></select></div><p class="findings-help">Cada observación incluye evidencia, recomendación, solución, pasos y criterio de cierre.</p><div id="findingsList" class="findings-list"></div></article></section>
+        </section>
+
+        <section class="error-box hidden" id="errorBox" role="alert"><strong>No se pudo completar la auditoría</strong><p id="errorText"></p><button id="retryButton" class="ghost">Volver</button></section>
+      </main>
+
+      <footer><span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span><span>cybergcode.com · Lambayeque, Perú</span></footer>
+    </div>
+  </div>
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>

@@ -59,6 +59,7 @@ function initRevealAnimations() {
 }
 
 function view(name) {
+  document.body.dataset.view = name;
   hero.classList.toggle('hidden', name !== 'hero');
   working.classList.toggle('hidden', name !== 'working');
   dashboard.classList.toggle('hidden', name !== 'dashboard');
@@ -117,14 +118,16 @@ function animateGlobalScore(value) {
 function renderScores(audit) {
   animateGlobalScore(audit.scores.global);
   $('#methodology').textContent = audit.scores.methodology;
-  $('#scoreCards').innerHTML = Object.entries(audit.scores.categories)
-    .map(([key,value], index) => `<article class="panel score-card" style="--delay:${index * 45}ms"><span>${escapeHtml(labels[key] || key)}</span><b>${value === null ? 'N/D' : value}</b><em>${value === null ? 'pendiente' : '/ 100'}</em><div class="score-bar"><i style="--bar:${value === null ? 0 : Math.max(0, Math.min(100, value))}%"></i></div></article>`).join('');
+  const measured = Object.entries(audit.scores.categories).filter(([,value]) => Number.isFinite(value));
+  $('#scoreCards').innerHTML = measured.length ? measured
+    .map(([key,value], index) => `<article class="panel score-card" style="--delay:${index * 45}ms"><span>${escapeHtml(labels[key] || key)}</span><b>${value}</b><em>/ 100</em><div class="score-bar"><i style="--bar:${Math.max(0, Math.min(100, value))}%"></i></div></article>`).join('')
+    : '<div class="source-unavailable"><strong>Sin categorías puntuables</strong>No se recibió una fuente suficiente para calcular puntuaciones.</div>';
 }
 
 function renderStats(audit) {
   const s = audit.summary;
   const stats = [
-    [s.severity.critical||0,'Críticos'],[s.severity.high||0,'Altos'],[s.severity.medium||0,'Medios'],[s.severity.low||0,'Bajos'],[s.pagesCrawled,'Páginas'],[s.images,'Imágenes']
+    [s.severity.critical||0,'Críticos'],[s.severity.high||0,'Altos'],[s.severity.medium||0,'Medios'],[s.severity.low||0,'Bajos']
   ];
   $('#stats').innerHTML = stats.map(([value,label], index) => `<div class="stat" style="--delay:${index * 45}ms"><b>${value}</b><span>${label}</span></div>`).join('');
 }
@@ -165,7 +168,7 @@ function metricRows(rows) {
 
 function renderPageSpeed(audit) {
   const render = (data, selector) => {
-    if (!data) { $(selector).innerHTML = '<p class="muted">No disponible en esta ejecución.</p>'; return; }
+    if (!data) { $(selector).innerHTML = '<div class="source-unavailable"><strong>Fuente no disponible</strong>PageSpeed/Lighthouse no devolvió datos válidos en esta ejecución. No se asigna una puntuación ficticia.</div>'; return; }
     const c = data.categories || {}, m = data.metrics || {}, v = data.variability || {};
     const performanceRange = v.performance?.range;
     const lcpRange = v.lcpMs?.range;
@@ -187,7 +190,7 @@ function renderPageSpeed(audit) {
 function renderBrowser(audit) {
   const b = audit.browser;
   if (!b || b.moduleStatus !== 'measured') {
-    $('#browserMetrics').innerHTML = `<p class="muted">Chromium no disponible: ${escapeHtml(b?.error || 'sin datos')}</p>`;
+    $('#browserMetrics').innerHTML = `<div class="source-unavailable"><strong>Chromium no disponible</strong>${escapeHtml(b?.error || 'No se recibió un resultado del navegador headless.')}</div>`;
     $('#visualPanel').classList.add('soft-disabled');
     return;
   }
@@ -481,19 +484,98 @@ function renderAudit(audit) {
   currentAudit = audit;
   $('#targetName').textContent = new URL(audit.meta.target).hostname;
   $('#auditMeta').textContent = `${audit.meta.id} · ${audit.summary.pagesCrawled} páginas · ${audit.summary.findingsTotal ?? audit.findings.length} hallazgos${audit.summary.payloadTruncated ? ` (mostrando ${audit.summary.findingsReturned} prioritarios)` : ''} · ${new Date(audit.meta.finishedAt).toLocaleString('es-PE')}`;
-  renderScores(audit); renderStats(audit); renderConsistency(audit); renderSeo(audit); renderHeadings(audit); renderImages(audit); renderPageSpeed(audit); renderBrowser(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit);
+  renderScores(audit); renderStats(audit); renderConsistency(audit); renderSeo(audit); renderHeadings(audit); renderImages(audit); renderPageSpeed(audit); renderBrowser(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderOverview(audit);
   $('#modules').innerHTML = Object.entries(audit.modules).map(([key,value]) => `<div class="module"><b>${escapeHtml(key)}</b><span class="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join('');
 }
+
+
+function severityLabel(value) {
+  return ({ critical:'CRÍTICO', high:'ALTO', medium:'MEDIO', low:'BAJO', info:'INFO' }[value] || String(value || '').toUpperCase());
+}
+
+function renderOverview(audit) {
+  const seo = audit.seo || {};
+  const m = seo.metadata || {}, h = seo.headings || {}, c = seo.coverage || {}, links = seo.links || {};
+  $('#overviewSeoSnapshot').innerHTML = metricRows([
+    ['Indexables', String(c.indexable ?? 0)], ['Sin title', String(m.missingTitles ?? 0)], ['Titles duplicados', String(m.duplicateTitleGroups ?? 0)],
+    ['Sin description', String(m.missingDescriptions ?? 0)], ['Sin H1', String(h.pagesMissingH1 ?? 0)], ['Múltiples H1', String(h.pagesMultipleH1 ?? 0)],
+    ['Sin canonical', String(m.missingCanonicals ?? 0)], ['robots.txt', seo.robots?.status == null ? 'N/D' : `HTTP ${seo.robots.status}`],
+    ['URLs descubiertas', String(c.discovered ?? 0)], ['URLs rastreadas', String(c.crawled ?? 0)], ['Enlaces internos', String(links.internal ?? 0)], ['Enlaces externos', String(links.external ?? 0)]
+  ]);
+  const totals = h.totals || {};
+  $('#overviewHeadingSnapshot').innerHTML = [1,2,3,4,5,6].map(level => `<div><b>${totals[`h${level}`] || 0}</b><span>H${level}</span></div>`).join('');
+  const dup = (m.duplicateDescriptions || []).length;
+  $('#overviewHeadingNote').textContent = `${h.pagesMissingH1 || 0} página(s) sin H1 · ${h.pagesMultipleH1 || 0} con múltiples H1${dup ? ` · ${dup} grupo(s) de descriptions duplicadas` : ''}.`;
+
+  $('#overviewPagesTable').innerHTML = (audit.pages || []).slice(0,8).map(page => {
+    const counts = {1:0,2:0,3:0,4:0,5:0,6:0};
+    (page.headings || []).forEach(x => { if (counts[x.level] != null) counts[x.level] += 1; });
+    const h1 = (page.headings || []).find(x => x.level === 1)?.text || '—';
+    return `<tr><td>${escapeHtml(pathLabel(page.url))}</td>${[1,2,3,4,5,6].map(level => `<td class="num-cell">${counts[level]}</td>`).join('')}<td>${escapeHtml(h1)}</td></tr>`;
+  }).join('');
+
+  const findings = [...(audit.findings || [])].sort((a,b) => (severityRank[b.severity]||0)-(severityRank[a.severity]||0)).slice(0,7);
+  $('#topFindings').innerHTML = findings.length ? findings.map(f => `<article class="top-finding"><span class="badge ${escapeHtml(f.severity)}">${severityLabel(f.severity)}</span><div><strong>${escapeHtml(f.title)}</strong><small>${escapeHtml(f.ruleId || '')}</small></div></article>`).join('') : '<div class="empty-rail">No se recibieron observaciones priorizadas.</div>';
+
+  const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
+  $('#auditInfo').innerHTML = metricRows([
+    ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.8.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+  ]);
+}
+
+function prepareWorkingIdentity(raw) {
+  let host = raw.replace(/^https?:\/\//i,'').split('/')[0] || raw || 'sitio';
+  $('#workingDomain').textContent = host;
+  $('#workingSiteLogo').hidden = true;
+  $('#workingSiteLogo').removeAttribute('src');
+  $('#workingSiteFallback').hidden = false;
+  $('#workingSiteFallback').textContent = host.slice(0,3).toUpperCase();
+  const status = $('#identityStatus');
+  status.classList.remove('ready');
+  status.querySelector('span').textContent = 'Detectando identidad visual del sitio…';
+}
+
+async function loadSiteIdentity(raw) {
+  try {
+    const response = await fetch('/api/identity', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url: raw }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Sin identidad visual');
+    if (data.hostname) $('#workingDomain').textContent = data.hostname;
+    if (data.visual?.dataUrl) {
+      const img = $('#workingSiteLogo');
+      img.src = data.visual.dataUrl;
+      img.hidden = false;
+      $('#workingSiteFallback').hidden = true;
+    }
+    const status = $('#identityStatus');
+    status.classList.add('ready');
+    status.querySelector('span').textContent = data.visual ? 'Identidad visual real detectada' : 'Dominio validado; se usará identificación textual';
+    return data;
+  } catch (error) {
+    const status = $('#identityStatus');
+    status.classList.add('ready');
+    status.querySelector('span').textContent = 'Dominio identificado; logo no disponible de forma segura';
+    return null;
+  }
+}
+
+document.querySelectorAll('[data-open-tab]').forEach(button => button.addEventListener('click', () => activateDashboardTab(button.dataset.openTab)));
+document.querySelectorAll('[data-jump-tab]').forEach(button => button.addEventListener('click', () => { if (!currentAudit) return; activateDashboardTab(button.dataset.jumpTab); document.querySelector('.dashboard-nav')?.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block:'start'}); }));
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   submitButton.disabled = true;
   view('working');
+  const rawTarget = $('#url').value.trim();
+  prepareWorkingIdentity(rawTarget);
+  const identityPromise = loadSiteIdentity(rawTarget);
   try {
     const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url:$('#url').value, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Error de auditoría.');
     currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
+    await identityPromise.catch(() => null);
     renderAudit(data); view('dashboard');
   } catch (error) {
     $('#errorText').textContent = error.message; view('error');
