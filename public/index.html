@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#070b12">
+  <title>CYBERGCODE Web Audit Intelligence</title>
+  <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, estructura, imágenes, seguridad y diagnóstico técnico desde una sola URL.">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
+      <span class="brand-mark">CG</span>
+      <span><strong>CYBERGCODE</strong><small>WEB AUDIT INTELLIGENCE</small></span>
+    </a>
+    <div class="version">ENGINE 0.1.0</div>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="eyebrow">AUDITORÍA TÉCNICA · SEO · SEGURIDAD</div>
+      <h1>Una URL.<br><span>Un diagnóstico accionable.</span></h1>
+      <p class="lead">Analiza estructura HTML, SEO on-page, H1–H6, imágenes, enlaces, cabeceras de seguridad y estado técnico con evidencia verificable.</p>
+
+      <form id="auditForm" class="audit-form">
+        <label for="url" class="sr-only">Dominio o URL</label>
+        <div class="input-wrap">
+          <span class="protocol">HTTPS</span>
+          <input id="url" name="url" autocomplete="url" spellcheck="false" placeholder="ejemplo.com" required>
+          <button type="submit"><span>Analizar sitio</span><span aria-hidden="true">→</span></button>
+        </div>
+        <div class="form-options">
+          <label>Páginas <select id="maxPages"><option>5</option><option selected>12</option><option>25</option><option>50</option></select></label>
+          <span>Seguridad pasiva</span><span>Sin pruebas intrusivas</span><span>SSRF Guard</span>
+        </div>
+      </form>
+
+      <div class="scope-grid">
+        <div><strong>HTTP</strong><span>estado, redirects, headers</span></div>
+        <div><strong>SEO</strong><span>title, description, canonical</span></div>
+        <div><strong>HEADINGS</strong><span>H1–H6 y jerarquía</span></div>
+        <div><strong>IMAGES</strong><span>alt, loading, dimensiones</span></div>
+        <div><strong>SECURITY</strong><span>HTTPS, CSP, HSTS, mixed</span></div>
+        <div><strong>SCHEMA</strong><span>JSON-LD y tipos detectados</span></div>
+      </div>
+    </section>
+
+    <section class="working hidden" id="working" aria-live="polite">
+      <div class="radar"><i></i><i></i><i></i><b>CG</b></div>
+      <div><p class="eyebrow">PROCESANDO EN SERVIDOR</p><h2 id="workingTitle">Validando dominio y rastreando páginas</h2><p>No mostramos porcentajes simulados. El resultado aparecerá cuando el servidor complete esta fase.</p></div>
+    </section>
+
+    <section class="dashboard hidden" id="dashboard">
+      <div class="dashboard-head">
+        <div><p class="eyebrow">AUDITORÍA COMPLETADA</p><h2 id="targetName">—</h2><p id="auditMeta" class="muted"></p></div>
+        <div class="actions"><button id="newAudit" class="ghost">Nueva auditoría</button><button id="exportPdf">Exportar PDF</button></div>
+      </div>
+
+      <div class="score-layout">
+        <article class="global-score panel"><span>PUNTUACIÓN MEDIDA</span><div class="score" id="globalScore">—</div><small>/ 100</small><p id="methodology"></p></article>
+        <div class="score-cards" id="scoreCards"></div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="content-grid">
+        <article class="panel findings-panel">
+          <div class="panel-head"><div><span>HALLAZGOS</span><h3>Prioridades y evidencia</h3></div><select id="severityFilter"><option value="all">Todos</option><option value="critical">Críticos</option><option value="high">Altos</option><option value="medium">Medios</option><option value="low">Bajos</option></select></div>
+          <div id="findingsList" class="findings-list"></div>
+        </article>
+        <aside>
+          <article class="panel"><span>MÓDULOS</span><h3>Cobertura actual</h3><div id="modules" class="modules"></div></article>
+          <article class="panel"><span>PÁGINAS</span><h3>URLs inspeccionadas</h3><div id="pagesList" class="pages-list"></div></article>
+        </aside>
+      </div>
+    </section>
+
+    <section class="error-box hidden" id="errorBox" role="alert"><strong>No se pudo completar la auditoría</strong><p id="errorText"></p><button id="retryButton" class="ghost">Volver</button></section>
+  </main>
+
+  <footer><span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span><span>cybergcode.com · Lambayeque, Perú</span></footer>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
