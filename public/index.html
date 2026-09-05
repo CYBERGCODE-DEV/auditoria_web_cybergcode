@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#061427">
   <title>CYBERGCODE Web Audit Intelligence</title>
   <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, seguridad, accesibilidad, ISO, infraestructura y cumplimiento desde una sola URL.">
-  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.15.0" type="image/png">
-  <script src="/js/theme.js?v=0.15.0"></script>
-  <link rel="stylesheet" href="/css/app.css?v=0.15.0">
+  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.15.1" type="image/png">
+  <script src="/js/theme.js?v=0.15.1"></script>
+  <link rel="stylesheet" href="/css/app.css?v=0.15.1">
 </head>
 <body data-view="hero">
   <div class="ambient ambient-a" aria-hidden="true"></div>
@@ -18,14 +18,14 @@
     <div class="app-column">
       <header class="topbar">
         <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
-          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.15.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.15.0" alt=""></span>
+          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.15.1" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.15.1" alt=""></span>
           <span class="brand-copy"><strong>CYBERG<span>CODE</span></strong><small>WEB AUDIT INTELLIGENCE</small></span>
         </a>
         <div class="top-actions">
           <span class="real-data-badge"><i></i>Datos reales · sin simulación</span>
           <span id="platformDbBadge" class="platform-db-badge" title="Estado de persistencia"><i></i><span>Histórico</span></span>
           <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema"><span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span></button>
-          <div class="version">ENGINE 0.15.0</div>
+          <div class="version">ENGINE 0.15.1</div>
         </div>
       </header>
 
@@ -103,7 +103,7 @@
             <div class="working-wave working-wave-b" aria-hidden="true"></div>
 
             <div class="working-side working-left">
-              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.15.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
+              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.15.1" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
               <p class="working-kicker">AUDITORÍA EN PROCESO</p>
               <h2>Analizando<br><span id="workingDomain">—</span></h2>
               <p>Extrayendo y analizando datos reales del sitio en el servidor. La interfaz no inventa porcentajes ni resultados intermedios.</p>
@@ -336,9 +336,9 @@
           </section>
 
           <section class="analysis-view" data-view="project" role="tabpanel" hidden>
-            <div class="section-intro"><div><span>PROYECTO</span><h3>Proyecto persistente del dominio auditado</h3></div><p>Las auditorías se agrupan automáticamente por dominio cuando PostgreSQL está configurado.</p></div>
+            <div class="section-intro"><div><span>PROYECTO</span><h3>Proyecto persistente del dominio auditado</h3></div><p>Las auditorías se agrupan automáticamente por dominio cuando una base compatible está configurada.</p></div>
             <div class="platform-grid">
-              <article class="panel"><div class="panel-head"><div><span>ESTADO DE PLATAFORMA</span><h3>Persistencia PostgreSQL</h3></div><span class="status-pill" id="platformStatusPill">Comprobando</span></div><div id="platformStatusMetrics" class="metric-list"></div><form id="platformAccessForm" class="platform-access-form"><label>Clave administrativa<input id="platformAccessKey" type="password" autocomplete="current-password" placeholder="CYBERGCODE_PLATFORM_KEY"></label><button type="submit" class="mini-action">Desbloquear histórico</button><small>La clave se conserva únicamente en esta pestaña del navegador mediante sessionStorage.</small></form></article>
+              <article class="panel"><div class="panel-head"><div><span>ESTADO DE PLATAFORMA</span><h3>Persistencia SQL</h3></div><span class="status-pill" id="platformStatusPill">Comprobando</span></div><div id="platformStatusMetrics" class="metric-list"></div><form id="platformAccessForm" class="platform-access-form"><label>Clave administrativa<input id="platformAccessKey" type="password" autocomplete="current-password" placeholder="CYBERGCODE_PLATFORM_KEY"></label><button type="submit" class="mini-action">Desbloquear histórico</button><small>La clave se conserva únicamente en esta pestaña del navegador mediante sessionStorage.</small></form></article>
               <article class="panel"><div class="panel-head"><div><span>PROYECTO ACTUAL</span><h3 id="currentProjectName">Sin proyecto persistente</h3></div></div><div id="currentProjectMetrics" class="metric-list"></div><form id="projectEditForm" class="project-edit-form"><label>Nombre<input id="projectNameInput" maxlength="160" placeholder="Nombre del proyecto"></label><label>Descripción<textarea id="projectDescriptionInput" rows="3" maxlength="500" placeholder="Notas internas del proyecto"></textarea></label><button type="submit" class="mini-action">Guardar proyecto</button></form></article>
             </div>
             <article class="panel"><div class="panel-head"><div><span>PROYECTOS</span><h3>Dominios con histórico persistente</h3></div><button id="refreshProjects" class="mini-action" type="button">Actualizar</button></div><div id="projectList" class="project-list"></div></article>
@@ -366,6 +366,6 @@
       <footer><span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span><span>cybergcode.com · Lambayeque, Perú</span></footer>
     </div>
   </div>
-  <script type="module" src="/js/app.js?v=0.15.0"></script>
+  <script type="module" src="/js/app.js?v=0.15.1"></script>
 </body>
 </html>

@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.15.1 — adaptadores MySQL/MariaDB y PostgreSQL
+
+- Nueva capa de persistencia multiproveedor seleccionable con `DB_PROVIDER`.
+- Soporte de primera clase para **MySQL 8**, **MariaDB**, **TiDB MySQL-compatible** y PostgreSQL/Neon.
+- Driver `mysql2` fijado en `3.24.3`.
+- Pool serverless limitado y configurable mediante `DB_POOL_LIMIT`.
+- TLS configurable mediante `DB_SSL` y activación automática para hosts TiDB Cloud/PlanetScale.
+- Nueva migración `migrations/mysql/001_platform.sql`.
+- Los snapshots/resultados MySQL usan `LONGTEXT` para compatibilidad MySQL/MariaDB y se serializan/deserializan de forma explícita.
+- La interfaz de Plataforma ahora muestra proveedor, dialecto y versión del servidor SQL detectado.
+- PostgreSQL/Neon permanece disponible sin cambios funcionales para el usuario.
+- El motor de auditoría continúa funcionando sin base de datos; no se inventan históricos.
+- ENGINE `0.15.1`, perfil de auditoría `CG-STABLE-5`.
+
 ## v0.15.0 — proyectos, PostgreSQL, histórico y antes/después
 
 - Persistencia opcional mediante PostgreSQL serverless (`DATABASE_URL`) compatible con Neon/Vercel.

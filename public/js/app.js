@@ -945,7 +945,7 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.15.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.15.1'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
@@ -1246,7 +1246,7 @@ function setPlatformBadge(state) {
   badge.classList.toggle('protected', dbReady && !authorized);
   badge.classList.toggle('offline', !dbReady);
   badge.querySelector('span').textContent = ready ? 'Histórico activo' : (dbReady ? 'Histórico protegido' : 'Histórico local');
-  badge.title = ready ? 'PostgreSQL conectado y acceso administrativo autorizado.' : (dbReady ? 'PostgreSQL conectado; introduce la clave de plataforma para consultar el histórico.' : (state?.database?.reason || 'PostgreSQL no configurado.'));
+  badge.title = ready ? 'Base SQL conectada y acceso administrativo autorizado.' : (dbReady ? 'Base SQL conectada; introduce la clave de plataforma para consultar el histórico.' : (state?.database?.reason || 'Base SQL no configurada.'));
 }
 
 async function fetchPlatformStatus({ force = false } = {}) {
@@ -1303,7 +1303,7 @@ async function refreshProjects({ selectCurrent = true } = {}) {
 function renderPlatformUnavailable(reason = '') {
   const pill = $('#platformStatusPill'); if (pill) { pill.textContent = 'No configurado'; pill.classList.remove('pass'); }
   const metrics = $('#platformStatusMetrics');
-  if (metrics) metrics.innerHTML = `<div class="source-unavailable"><strong>Histórico persistente desactivado</strong>${escapeHtml(reason || 'Configura DATABASE_URL para activar proyectos, histórico y comparativas.')}</div>`;
+  if (metrics) metrics.innerHTML = `<div class="source-unavailable"><strong>Histórico persistente desactivado</strong>${escapeHtml(reason || 'Configura DB_PROVIDER y DATABASE_URL para activar proyectos, histórico y comparativas.')}</div>`;
   const projectList = $('#projectList'); if (projectList) projectList.innerHTML = '<div class="source-unavailable"><strong>Sin base de datos</strong>El auditor sigue funcionando normalmente; solo la persistencia histórica está desactivada.</div>';
   const history = $('#historyList'); if (history) history.innerHTML = '<div class="source-unavailable"><strong>Histórico no disponible</strong>No se inventan ejecuciones pasadas.</div>';
 }
@@ -1311,7 +1311,7 @@ function renderPlatformUnavailable(reason = '') {
 function renderProjectList() {
   const node = $('#projectList'); if (!node) return;
   if (!platformState.projects.length) {
-    node.innerHTML = '<div class="source-unavailable"><strong>Aún no hay proyectos</strong>Completa una auditoría con PostgreSQL conectado para crear el proyecto automáticamente.</div>';
+    node.innerHTML = '<div class="source-unavailable"><strong>Aún no hay proyectos</strong>Completa una auditoría con la base SQL conectada para crear el proyecto automáticamente.</div>';
     return;
   }
   node.innerHTML = platformState.projects.map((project) => `<button class="project-card ${project.id === platformState.currentProjectId ? 'active' : ''}" type="button" data-project-id="${escapeHtml(project.id)}"><span><strong>${escapeHtml(project.name || project.domain)}</strong><small>${escapeHtml(project.domain)}</small></span><span class="project-card-metrics"><b>${project.auditCount}</b><small>auditorías</small><b>${project.lastScore ?? '—'}</b><small>último score</small></span><em>${escapeHtml(platformDate(project.lastAuditAt))}</em></button>`).join('');
@@ -1353,7 +1353,7 @@ async function renderProjectView() {
   if (pill) { pill.textContent = !ready ? 'No configurado' : (authorized ? 'Conectado' : 'Protegido'); pill.classList.toggle('pass', ready && authorized); }
   if (!ready) { renderPlatformUnavailable(status?.database?.reason); return; }
   $('#platformStatusMetrics').innerHTML = metricRows([
-    ['Proveedor', status.database.provider || 'PostgreSQL'], ['Base de datos', 'Conectada'], ['Acceso', authorized ? 'Autorizado' : (status.access?.configured ? 'Clave requerida' : 'CYBERGCODE_PLATFORM_KEY no configurada')], ['Última comprobación', platformDate(status.database.serverTime)]
+    ['Proveedor', status.database.label || status.database.provider || 'SQL'], ['Dialecto', status.database.dialect || 'N/D'], ['Driver', status.database.driver || 'N/D'], ['Servidor', status.database.serverVersion || 'N/D'], ['Base de datos', 'Conectada'], ['Acceso', authorized ? 'Autorizado' : (status.access?.configured ? 'Clave requerida' : 'CYBERGCODE_PLATFORM_KEY no configurada')], ['Última comprobación', platformDate(status.database.serverTime)]
   ]);
   if (!authorized) {
     $('#projectList').innerHTML = '<div class="source-unavailable"><strong>Histórico protegido</strong>Introduce la clave administrativa configurada en Vercel para consultar proyectos y auditorías.</div>';

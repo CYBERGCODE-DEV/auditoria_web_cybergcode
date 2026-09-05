@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.15.0
+# CYBERGCODE Web Audit Intelligence v0.15.1
 
 Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
 
@@ -202,11 +202,21 @@ OPENAI_MODEL=gpt-5.6-luna
 CHROME_EXECUTABLE_PATH=
 CHROMIUM_PACK_URL=
 CYBERGCODE_QUEUE_DISABLED=0
-DATABASE_URL=
+
+# Persistencia SQL
+DB_PROVIDER=mysql
+DATABASE_URL=mysql://usuario:password@host:3306/cybergcode_auditoria
+MYSQL_URL=
+MARIADB_URL=
+POSTGRES_URL=
+DB_SSL=0
+DB_SSL_REJECT_UNAUTHORIZED=1
+DB_POOL_LIMIT=4
+DB_CONNECT_TIMEOUT_MS=10000
 CYBERGCODE_PLATFORM_KEY=
 ```
 
-Las claves externas son opcionales. Si una fuente no está configurada o no responde, el informe lo declara y no genera datos sustitutos.
+`DB_PROVIDER` admite `mysql`, `mariadb`, `tidb`, `planetscale`, `postgres` y `neon`. Si no se define, el motor intenta inferir el dialecto por la URL. Las claves externas son opcionales; si una fuente no responde, el informe no crea datos sustitutos.
 
 ## Desarrollo
 
@@ -226,7 +236,7 @@ En local o si la cola no está disponible, el mismo motor cae a modo cliente sin
 
 1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
 2. Hacer push a la rama conectada a Vercel.
-3. Confirmar **ENGINE 0.15.0** y perfil **CG-STABLE-5**.
+3. Confirmar **ENGINE 0.15.1** y perfil **CG-STABLE-5**.
 4. Probar primero 12–25 páginas.
 5. Probar después 100 páginas y verificar el panel de progreso por lotes.
 6. Recargar durante un job y confirmar que aparece **Reanudar**.
@@ -244,25 +254,69 @@ En local o si la cola no está disponible, el mismo motor cae a modo cliente sin
 - PageSpeed no se ejecuta automáticamente sobre cada plantilla.
 - El detalle extremadamente grande de una página puede compactarse para almacenamiento temporal y queda marcado como tal.
 
-## Plataforma persistente V0.15
+## Plataforma persistente V0.15.1 — MySQL/MariaDB + PostgreSQL
 
-V0.15 incorpora la primera capa de plataforma persistente sin cambiar el motor de auditoría:
+La persistencia ahora usa una capa de adaptadores SQL. El motor de auditoría no depende del proveedor:
 
 ```text
 Proyecto por dominio
   ↓
 Auditoría completada
   ↓
-Snapshot histórico + resumen
+Snapshot + resumen
   ↓
-PostgreSQL / Neon
+DATABASE ADAPTER
+  ├─ MySQL / MariaDB / TiDB
+  └─ PostgreSQL / Neon
   ↓
-Historial
-  ↓
-Antes vs Después
+Historial + Antes vs Después
 ```
 
-Nuevos endpoints:
+### MySQL o MariaDB
+
+Configuración mínima en Vercel:
+
+```env
+DB_PROVIDER=mysql
+DATABASE_URL=mysql://usuario:password@host:3306/cybergcode_auditoria
+CYBERGCODE_PLATFORM_KEY=una-clave-administrativa-larga
+```
+
+Para MariaDB puedes usar `DB_PROVIDER=mariadb` y URL `mariadb://...`; internamente la conexión se normaliza al protocolo MySQL compatible. El pool serverless utiliza pocas conexiones (`DB_POOL_LIMIT=4` por defecto).
+
+La migración manual está en:
+
+```text
+migrations/mysql/001_platform.sql
+```
+
+El runtime también ejecuta `CREATE TABLE IF NOT EXISTS`, por lo que la migración manual es opcional. Los JSON históricos se guardan como `LONGTEXT` para mantener compatibilidad amplia entre MySQL y MariaDB y se parsean al leerlos.
+
+### TiDB Cloud
+
+```env
+DB_PROVIDER=tidb
+DATABASE_URL=mysql://usuario:password@host:4000/cybergcode_auditoria
+```
+
+Se utiliza el mismo adaptador MySQL. El runtime activa TLS automáticamente para hosts `tidbcloud.com`.
+
+### PostgreSQL / Neon
+
+Sigue totalmente soportado:
+
+```env
+DB_PROVIDER=neon
+DATABASE_URL=postgresql://usuario:password@host/base?sslmode=require
+```
+
+Migración opcional:
+
+```text
+migrations/postgres/001_platform.sql
+```
+
+### Endpoints de plataforma
 
 ```text
 GET  /api/platform-status
@@ -275,24 +329,13 @@ GET  /api/audit-record?id=...
 GET  /api/comparison?before=...&after=...
 ```
 
-El esquema puede crearse automáticamente en la primera conexión o ejecutarse manualmente desde `migrations/001_platform.sql`.
+Los endpoints administrativos requieren `CYBERGCODE_PLATFORM_KEY`. La clave se escribe en la interfaz y permanece solo en `sessionStorage`; `DATABASE_URL` nunca se expone al navegador.
 
-### Configurar Neon en Vercel
-
-1. Vercel → **Storage / Marketplace** → instalar **Neon**.
-2. Conectar el recurso al proyecto de auditoría.
-3. Confirmar que Vercel expone `DATABASE_URL`.
-4. Hacer redeploy.
-5. Entrar en **Proyecto**: el estado debe aparecer como **Conectado**.
-6. Ejecutar dos auditorías del mismo dominio y abrir **Historial → Comparar**.
-
-Si `DATABASE_URL` no existe, el scanner continúa funcionando y la interfaz muestra que el histórico persistente está desactivado.
-
-Los endpoints de proyectos e histórico requieren además `CYBERGCODE_PLATFORM_KEY`. Esta capa es una protección administrativa de transición para V0.15 y evita exponer el histórico de forma pública antes de implementar usuarios/roles completos.
+Si ninguna base está configurada, el scanner continúa funcionando con todos sus módulos y únicamente desactiva Proyectos/Historial/Comparativas.
 
 ### Qué se guarda
 
-Siempre se guarda un snapshot ligero con puntuaciones, severidades, cobertura, SEO, H1–H6, imágenes, contenido y rendimiento disponible. El resultado completo solo se guarda en JSONB cuando su tamaño está por debajo del umbral seguro del motor; esto evita convertir el histórico en un almacén de payloads gigantes.
+Siempre se conserva un snapshot ligero con puntuaciones, severidades, cobertura, SEO, H1–H6, imágenes, contenido y rendimiento disponible. El resultado completo solo se almacena cuando queda por debajo del umbral seguro definido por el motor.
 
 ## Siguiente fase plataforma
 
@@ -306,4 +349,4 @@ cybergcode.com · Lambayeque, Perú
 
 ## Paquete de producción
 
-Esta distribución **v0.15.0 Production** excluye deliberadamente toda la carpeta de pruebas y archivos `*.test.js`. El comando `npm test` también fue retirado del `package.json`. Se conserva `npm run check` porque únicamente valida la sintaxis del código de producción y no incorpora fixtures ni suites de pruebas al despliegue.
+Esta distribución **v0.15.1 Production** excluye deliberadamente toda la carpeta de pruebas y archivos `*.test.js`. El comando `npm test` también fue retirado del `package.json`. Se conserva `npm run check` porque únicamente valida la sintaxis del código de producción y no incorpora fixtures ni suites de pruebas al despliegue.

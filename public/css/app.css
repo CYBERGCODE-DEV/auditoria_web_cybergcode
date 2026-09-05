@@ -598,7 +598,7 @@ img,svg,canvas{max-width:100%}
 }
 
 /* =========================================================
-   CYBERGCODE v0.15.0 — projects, history and comparisons
+   CYBERGCODE v0.15.1 — projects, history and comparisons
    ========================================================= */
 .platform-db-badge{display:inline-flex;align-items:center;gap:.45rem;padding:.42rem .68rem;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:.66rem;font-weight:800;white-space:nowrap}
 .platform-db-badge i{width:.45rem;height:.45rem;border-radius:50%;background:var(--muted-2)}
