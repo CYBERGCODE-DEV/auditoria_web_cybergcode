@@ -8,12 +8,12 @@ const js = fs.readFileSync(new URL('../public/js/app.js', import.meta.url), 'utf
 const engine = fs.readFileSync(new URL('../lib/audit/engine.js', import.meta.url), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
- test('v0.8 implementa branding visual y workspace lateral', () => {
-  assert.equal(pkg.version, '0.8.1');
-  assert.match(html, /\/assets\/cybergcode-logo\.png/);
-  assert.match(html, /id="appSidebar"/);
-  assert.match(css, /body\[data-view="dashboard"\] \.app-sidebar/);
-  assert.match(css, /--sidebar:/);
+ test('base v0.8+ conserva branding transparente y dashboard sin sidebar', () => {
+  assert.equal(pkg.version, '0.10.0');
+  assert.match(html, /cybergcode-symbol\.png\?v=0\.10\.0/);
+  assert.match(html, /brand-copy/);
+  assert.doesNotMatch(html, /id="appSidebar"/);
+  assert.match(css, /Sidebar removed in 0\.8\.2/);
 });
 
 test('loader usa identidad real del dominio y evita porcentaje simulado', () => {
@@ -44,7 +44,7 @@ test('motor declara política measured-only sin simulación', () => {
 });
 
 
-test('loader 0.8.1 replica la composición profesional acordada sin datos ficticios', () => {
+test('loader 0.8.2 replica la composición profesional acordada sin datos ficticios', () => {
   assert.match(html, /working-brand-lockup/);
   assert.match(html, /id="workingElapsed"/);
   assert.match(html, /orbit-n8/);
@@ -56,8 +56,24 @@ test('loader 0.8.1 replica la composición profesional acordada sin datos fictic
   assert.match(js, /Fallback textual del dominio/);
 });
 
-test('branding usa logo principal y símbolo CYBERGCODE con cache-busting', () => {
-  assert.match(html, /cybergcode-logo\.png\?v=0\.8\.1/);
-  assert.match(html, /cybergcode-symbol\.png\?v=0\.8\.1/);
-  assert.match(html, /ENGINE 0\.8\.1/);
+test('branding usa símbolo + lockup CSS sin fondo blanco y cache-busting actual', () => {
+  assert.match(html, /cybergcode-symbol\.png\?v=0\.10\.0/);
+  assert.match(html, /brand-copy/);
+  assert.match(html, /ENGINE 0\.10\.0/);
+  assert.match(css, /background:transparent!important/);
+});
+
+test('tema oscuro dispone de símbolo dedicado y loader móvil compacto', () => {
+  assert.match(html, /cybergcode-symbol-dark\.png\?v=0\.10\.0/);
+  assert.match(css, /html\[data-theme="dark"\] \.brand-symbol-dark\{display:block!important\}/);
+  assert.match(css, /@media\(max-width:42rem\)/);
+  assert.match(css, /\.working-orbit\{width:min\(22rem,94vw\)\}/);
+});
+
+test('base visual conserva contenido e inventario avanzado de imágenes', () => {
+  assert.match(html, /data-tab="content"/);
+  assert.match(html, /id="contentKpis"/);
+  assert.match(html, /id="largestImagesTable"/);
+  assert.match(html, /id="technologyList"/);
+  assert.match(js, /function renderContent\(/);
 });

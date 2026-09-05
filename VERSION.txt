@@ -1,4 +1,1 @@
-CYBERGCODE Web Audit Intelligence
-VERSION=0.8.1
-BUILD=loader-brand-identity-hotfix
-DATA_POLICY=measured-only
+0.10.0

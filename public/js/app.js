@@ -29,6 +29,48 @@ $('#themeToggle')?.addEventListener('click', () => window.CGAuditTheme?.toggle?.
 const severityRank = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
 const labels = { security:'Seguridad', technical:'Técnico', seo:'SEO', images:'Imágenes', performance:'Rendimiento', content:'Contenido', accessibility:'Accesibilidad', ux:'UX / CRO', compliance:'ISO / Cumplimiento observable' };
 
+const modeDefaults = {
+  quick: { maxPages:'12', pageSpeed:false },
+  complete: { maxPages:'25', pageSpeed:true },
+  custom: { maxPages:null, pageSpeed:true }
+};
+
+function selectedAuditMode() {
+  return document.querySelector('input[name="auditMode"]:checked')?.value || 'complete';
+}
+
+function collectCustomModules() {
+  return Object.fromEntries([...document.querySelectorAll('[data-module]')].map((input) => [input.dataset.module, input.checked]));
+}
+
+function syncAuditModeUi({ initial = false } = {}) {
+  const mode = selectedAuditMode();
+  document.querySelectorAll('.audit-mode-card').forEach((card) => card.classList.toggle('active', card.querySelector('input')?.checked));
+  $('#customAuditConfig')?.classList.toggle('hidden', mode !== 'custom');
+  const preset = modeDefaults[mode] || modeDefaults.complete;
+  if (!initial && preset.maxPages) $('#maxPages').value = preset.maxPages;
+  if (mode !== 'custom') $('#pageSpeed').checked = preset.pageSpeed;
+  const contentSelected = mode !== 'custom' || collectCustomModules().content !== false;
+  const aiAllowed = contentSelected && mode !== 'quick';
+  $('#aiReview').disabled = !aiAllowed;
+  if (!aiAllowed) $('#aiReview').checked = false;
+  const deviceRelevant = mode !== 'quick';
+  $('#deviceMobile').disabled = !deviceRelevant;
+  $('#deviceDesktop').disabled = !deviceRelevant;
+}
+
+document.querySelectorAll('input[name="auditMode"]').forEach((input) => input.addEventListener('change', () => syncAuditModeUi()));
+document.querySelectorAll('[data-module]').forEach((input) => input.addEventListener('change', () => syncAuditModeUi({ initial:true })));
+$('#selectAllModules')?.addEventListener('click', () => {
+  const inputs = [...document.querySelectorAll('[data-module]')];
+  const shouldSelect = inputs.some((input) => !input.checked);
+  inputs.forEach((input) => { input.checked = shouldSelect; });
+  syncAuditModeUi({ initial:true });
+});
+$('#deviceMobile')?.addEventListener('change', () => { if (!$('#deviceMobile').checked && !$('#deviceDesktop').checked) $('#deviceDesktop').checked = true; });
+$('#deviceDesktop')?.addEventListener('change', () => { if (!$('#deviceMobile').checked && !$('#deviceDesktop').checked) $('#deviceMobile').checked = true; });
+syncAuditModeUi({ initial:true });
+
 function activateDashboardTab(name = 'overview') {
   document.querySelectorAll('.dashboard-tab').forEach((button) => {
     const active = button.dataset.tab === name;
@@ -199,7 +241,14 @@ function metricRows(rows) {
 
 function renderPageSpeed(audit) {
   const render = (data, selector) => {
-    if (!data) { $(selector).innerHTML = '<div class="source-unavailable"><strong>Fuente no disponible</strong>PageSpeed/Lighthouse no devolvió datos válidos en esta ejecución. No se asigna una puntuación ficticia.</div>'; return; }
+    if (!data) {
+      const deviceName = selector.includes('mobile') ? 'mobile' : 'desktop';
+      const availability = audit.performance?.deviceErrors?.[deviceName] || audit.performance?.availability;
+      const detail = availability?.detail || audit.performance?.error || 'PageSpeed/Lighthouse no devolvió datos válidos en esta ejecución.';
+      const action = availability?.action ? `<small><b>Acción:</b> ${escapeHtml(availability.action)}</small>` : '';
+      $(selector).innerHTML = `<div class="source-unavailable"><strong>Fuente no disponible</strong>${escapeHtml(detail)}<br>${action}<small>No se asigna una puntuación ficticia.</small></div>`;
+      return;
+    }
     const c = data.categories || {}, m = data.metrics || {}, v = data.variability || {};
     const performanceRange = v.performance?.range;
     const lcpRange = v.lcpMs?.range;
@@ -218,20 +267,52 @@ function renderPageSpeed(audit) {
   render(audit.performance?.desktop, '#desktopMetrics');
 }
 
+function renderFieldPerformance(audit) {
+  const crux = audit.performance?.crux;
+  const node = $('#cruxMetrics');
+  if (!node) return;
+  if (!crux || crux.status !== 'measured') {
+    node.innerHTML = `<div class="source-unavailable"><strong>${crux?.status === 'disabled' ? 'CrUX no configurado' : 'CrUX sin datos'}</strong>${escapeHtml(crux?.availability?.detail || 'No existe una muestra pública suficiente para esta URL/origen.')}${crux?.status === 'disabled' ? '<br><small>Configura CRUX_API_KEY para consultar datos reales de usuarios.</small>' : ''}</div>`;
+  } else {
+    const phone = crux.current?.phone; const desktop = crux.current?.desktop;
+    const row = (label, rec) => { const m=rec?.metrics||{}; return [`${label} CWV`, rec ? `${Number.isFinite(m.lcp?.p75)?`LCP ${Math.round(m.lcp.p75)}ms · `:''}${Number.isFinite(m.inp?.p75)?`INP ${Math.round(m.inp.p75)}ms · `:''}${Number.isFinite(m.cls?.p75)?`CLS ${m.cls.p75.toFixed(3)}`:''}` : 'Sin muestra']; };
+    const trend = (series, unit='ms') => {
+      const values = (series || []).filter(Number.isFinite); if (values.length < 2) return 'N/D';
+      const first=values[0], last=values[values.length-1], delta=last-first;
+      const fmt=(v)=>unit==='cls'?Number(v).toFixed(3):`${Math.round(v)}ms`;
+      return `${fmt(first)} → ${fmt(last)} (${delta===0?'=':(delta>0?'+':'')}${unit==='cls'?Number(delta).toFixed(3):Math.round(delta)+(unit||'')})`;
+    };
+    const ph = crux.history?.phone?.metrics || {};
+    node.innerHTML = metricRows([row('Móvil',phone),row('Desktop',desktop),['Scope móvil',phone?.scope||'N/D'],['Scope desktop',desktop?.scope||'N/D'],['Histórico móvil LCP',trend(ph.lcp?.p75s)],['Histórico móvil INP',trend(ph.inp?.p75s)],['Histórico móvil CLS',trend(ph.cls?.p75s,'cls')]]);
+  }
+  const resources = audit.browser?.performance?.topSlowResources || [];
+  $('#slowResources').innerHTML = resources.length ? resources.map((r)=>`<div class="resource-row"><strong title="${escapeHtml(r.name)}">${escapeHtml(pathLabel(r.name))}</strong><span>${formatMs(r.durationMs)}</span><small>${escapeHtml(r.type)} · ${formatBytes(r.transferBytes)}</small></div>`).join('') : '<p class="muted">No se recibieron Resource Timing utilizables.</p>';
+}
+
 function renderBrowser(audit) {
   const b = audit.browser;
   if (!b || b.moduleStatus !== 'measured') {
     $('#browserMetrics').innerHTML = `<div class="source-unavailable"><strong>Chromium no disponible</strong>${escapeHtml(b?.error || 'No se recibió un resultado del navegador headless.')}</div>`;
-    $('#visualPanel').classList.add('soft-disabled');
+    $('#visualPanel').classList.remove('soft-disabled');
+    $('#palette').innerHTML = '<span class="muted">Paleta no disponible sin DOM renderizado.</span>';
+    $('#fonts').innerHTML = '<span class="muted">Tipografías no disponibles sin DOM renderizado.</span>';
+    const technologies = audit.technologies || [];
+    $('#technologyList').innerHTML = technologies.length ? technologies.map((item) => `<article><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.category || 'Tecnología')}</span><small>${Math.round((item.confidence || 0) * 100)}% confianza · ${item.pages || 1} pág.</small><p>${escapeHtml(item.evidence || '')}</p></article>`).join('') : '<p class="muted">No se detectaron tecnologías con evidencia suficiente.</p>';
     return;
   }
   $('#visualPanel').classList.remove('soft-disabled');
   $('#browserMetrics').innerHTML = metricRows([
     ['HTTP renderizado', Number.isFinite(b.status) ? `HTTP ${b.status}` : 'N/D'],
     ['DOM nodes', String(b.domNodes ?? 'N/D')],
+    ['CYBERGCODE Lab Score', Number.isFinite(audit.performance?.browserLabScore) ? `${audit.performance.browserLabScore}/100` : 'N/D'],
+    ['LCP lab', Number.isFinite(b.performance?.lcpMs) ? `${(b.performance.lcpMs/1000).toFixed(2)} s` : 'N/D'],
+    ['CLS lab', Number.isFinite(b.performance?.cls) ? b.performance.cls.toFixed(3) : 'N/D'],
+    ['FCP lab', formatMs(b.performance?.fcpMs)],
+    ['TTFB lab', formatMs(b.performance?.ttfbMs)],
+    ['Long tasks', `${b.performance?.longTaskCount ?? 0} · ${formatMs(b.performance?.longTaskTotalMs)}`],
     ['Recursos', String(b.performance?.resourceCount ?? 'N/D')],
     ['Transferencia', formatBytes(b.performance?.transferBytes)],
-    ['Respuesta inicial', formatMs(b.performance?.responseStartMs)],
+    ['Scripts bloqueantes observados', String(b.performance?.renderBlockingScripts ?? 'N/D')],
     ['Load event', formatMs(b.performance?.loadEventMs)],
     ['Errores JS', String(b.console?.pageErrors ?? 0)],
     ['Contrastes fallidos', String(b.contrast?.failed ?? 0)],
@@ -240,17 +321,104 @@ function renderBrowser(audit) {
     ['axe-core revisión', b.axe?.moduleStatus === 'measured' ? String(b.axe?.incomplete ?? 0) : 'N/D']
   ]);
 
-  const colors = b.visual?.desktop?.colors || [];
+  const visualSource = b.visual?.desktop || b.visual?.mobile || {};
+  const colors = visualSource.colors || [];
   $('#palette').innerHTML = colors.length ? colors.map(item => `<div class="swatch"><i style="background:${escapeHtml(item.value)}"></i><span>${escapeHtml(item.value)}</span><small>${item.count}</small></div>`).join('') : '<span class="muted">Sin datos.</span>';
-  const fonts = b.visual?.desktop?.fonts || [];
+  const fonts = visualSource.fonts || [];
   $('#fonts').innerHTML = fonts.length ? fonts.map(item => `<span>${escapeHtml(item.value)} <small>${item.count}</small></span>`).join('') : '<span class="muted">Sin datos.</span>';
+  const technologies = audit.technologies || [];
+  $('#technologyList').innerHTML = technologies.length ? technologies.map((item) => `<article><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.category || 'Tecnología')}</span><small>${Math.round((item.confidence || 0) * 100)}% confianza · ${item.pages || 1} pág.</small><p>${escapeHtml(item.evidence || '')}</p></article>`).join('') : '<p class="muted">No se detectaron tecnologías con evidencia suficiente en las páginas rastreadas.</p>';
 
   const desktop = b.screenshots?.desktop;
   const mobile = b.screenshots?.mobile;
-  if (desktop?.base64) $('#desktopShot').src = `data:${desktop.mime};base64,${desktop.base64}`;
-  if (mobile?.base64) $('#mobileShot').src = `data:${mobile.mime};base64,${mobile.base64}`;
+  const desktopFigure = $('#desktopShot')?.closest('figure');
+  const mobileFigure = $('#mobileShot')?.closest('figure');
+  if (desktop?.base64) { $('#desktopShot').src = `data:${desktop.mime};base64,${desktop.base64}`; if (desktopFigure) desktopFigure.hidden=false; } else if (desktopFigure) desktopFigure.hidden=true;
+  if (mobile?.base64) { $('#mobileShot').src = `data:${mobile.mime};base64,${mobile.base64}`; if (mobileFigure) mobileFigure.hidden=false; } else if (mobileFigure) mobileFigure.hidden=true;
 }
 
+
+function renderCssAnalysis(audit) {
+  const css = audit.css;
+  const summary = css?.summary;
+  if (!summary || css?.status !== 'measured') {
+    $('#cssSummary').innerHTML = `<div class="source-unavailable"><strong>CSS avanzado ${css?.status === 'skipped' ? 'no seleccionado' : 'no disponible'}</strong>${escapeHtml(css?.status === 'skipped' ? 'El modo de auditoría no incluyó Diseño/CSS.' : 'Se requiere un DOM renderizado válido para analizar CSSOM y estilos computados.')}</div>`;
+    $('#cssTokens').innerHTML = '';
+    $('#unusedCssSamples').innerHTML = '<span class="muted">Sin muestra disponible.</span>';
+    return;
+  }
+  $('#cssSummary').innerHTML = metricRows([
+    ['Hojas CSS', String(summary.stylesheets ?? 0)],
+    ['Hojas accesibles por CSSOM', String(summary.accessibleStylesheets ?? 0)],
+    ['Hojas cross-origin/inaccesibles', String(summary.inaccessibleStylesheets ?? 0)],
+    ['Selectores estáticos evaluados', String(summary.accessibleSelectors ?? 0)],
+    ['Sin coincidencia observable', String(summary.unusedSelectors ?? 0)],
+    ['Ratio observable sin coincidencia', Number.isFinite(summary.unusedSelectorRatio) ? `${Math.round(summary.unusedSelectorRatio*100)}%` : 'N/D'],
+    ['Elementos con style inline', String(summary.inlineStyleElements ?? 0)],
+    ['Ratio inline en muestra', Number.isFinite(summary.inlineStyleRatio) ? `${Math.round(summary.inlineStyleRatio*100)}%` : 'N/D'],
+    ['Custom properties declaradas', String(summary.customPropertyDeclarations ?? 0)]
+  ]);
+  const tokenGroup = (title, items=[]) => `<section><strong>${escapeHtml(title)}</strong><div class="chip-list">${items.length ? items.slice(0,12).map((item)=>`<span>${escapeHtml(item.value)} <small>${item.count}</small></span>`).join('') : '<span class="muted">Sin datos</span>'}</div></section>`;
+  const states = summary.states || {};
+  $('#cssTokens').innerHTML = tokenGroup('Spacing observado', summary.spacingValues) + tokenGroup('Border radius', summary.borderRadii) + tokenGroup('Tamaños tipográficos', summary.fontSizes) + tokenGroup('Pesos tipográficos', summary.fontWeights) + `<section><strong>Estados CSS observados</strong><div class="state-badges"><span class="${states.hover?'ok':''}">:hover</span><span class="${states.focus?'ok':''}">:focus</span><span class="${states.focusVisible?'ok':''}">:focus-visible</span><span class="${states.disabled?'ok':''}">:disabled</span><span class="${states.checked?'ok':''}">:checked</span></div></section>`;
+  $('#unusedCssSamples').innerHTML = (summary.unusedSelectorSamples || []).length ? summary.unusedSelectorSamples.map((value)=>`<span>${escapeHtml(value)}</span>`).join('') : '<span class="muted">No se obtuvieron selectores estáticos sin coincidencia en la muestra accesible.</span>';
+}
+
+function a11yStorageKey(audit) { return `cybergcode-a11y-manual:${audit?.meta?.id || audit?.meta?.target || 'unknown'}`; }
+function readA11yState(audit) { try { return JSON.parse(localStorage.getItem(a11yStorageKey(audit)) || '{}'); } catch { return {}; } }
+function renderAccessibility(audit) {
+  const manual = audit.accessibilityManual;
+  const browser = audit.browser || {};
+  if (!manual || manual.status === 'skipped') {
+    $('#a11yKpis').innerHTML = '<div class="source-unavailable"><strong>Accesibilidad no seleccionada</strong>Este modo de auditoría no ejecutó el módulo.</div>';
+    $('#a11yAutomated').innerHTML = '';
+    $('#a11yManualProgress').innerHTML = '';
+    $('#a11yManualList').innerHTML = '';
+    return;
+  }
+  const axeMeasured = browser.axe?.moduleStatus === 'measured';
+  const state = readA11yState(audit);
+  (manual.items || []).forEach((item)=>{ item.clientStatus = state[item.id]?.reviewed ? 'reviewed' : 'pending-human-review'; });
+  const completed = (manual.items || []).filter((item)=>item.clientStatus === 'reviewed').length;
+  const total = manual.items?.length || 0;
+  const kpis = [
+    [axeMeasured ? (browser.axe?.violations ?? 0) : 'N/D','Violaciones axe-core'],
+    [browser.contrast ? (browser.contrast.failed ?? 0) : 'N/D','Contrastes fallidos'],
+    [browser.responsive ? (browser.responsive.smallTargets ?? 0) : 'N/D','Targets pequeños'],
+    [completed,`Manual revisados / ${total}`]
+  ];
+  $('#a11yKpis').innerHTML = kpis.map(([value,label],index)=>`<article class="seo-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+  $('#a11yAutomated').innerHTML = metricRows([
+    ['axe-core', axeMeasured ? 'Medido' : 'No disponible'],
+    ['Violaciones', axeMeasured ? String(browser.axe?.violations ?? 0) : 'N/D'],
+    ['Nodos afectados', axeMeasured ? String(browser.axe?.violationNodes ?? 0) : 'N/D'],
+    ['Requieren revisión axe', axeMeasured ? String(browser.axe?.incomplete ?? 0) : 'N/D'],
+    ['Contraste computado', browser.contrast ? `${browser.contrast.checked ?? 0} revisados` : 'N/D']
+  ]);
+  $('#a11yManualProgress').innerHTML = metricRows([
+    ['Estado', 'Revisión humana requerida'],
+    ['Criterios', String(total)],
+    ['Marcados revisados', String(completed)],
+    ['Pendientes', String(Math.max(0,total-completed))]
+  ]);
+  $('#a11yManualList').innerHTML = (manual.items || []).map((item)=>{
+    const checked = state[item.id]?.reviewed ? ' checked' : '';
+    return `<article class="manual-check-item ${checked?'reviewed':''}"><label><input type="checkbox" data-a11y-id="${escapeHtml(item.id)}"${checked}><span>Revisado</span></label><div><small>${escapeHtml(item.standard)}</small><strong>${escapeHtml(item.title)}</strong><p><b>Cómo probar:</b> ${escapeHtml(item.instructions)}</p><p><b>Evidencia:</b> ${escapeHtml(item.evidenceRequired)}</p><p class="acceptance"><b>Criterio de cierre:</b> ${escapeHtml(item.acceptanceCriteria)}</p></div></article>`;
+  }).join('');
+  $('#a11yManualList').querySelectorAll('[data-a11y-id]').forEach((input)=>input.addEventListener('change',()=>{
+    const fresh=readA11yState(audit); fresh[input.dataset.a11yId]={reviewed:input.checked,updatedAt:new Date().toISOString()}; localStorage.setItem(a11yStorageKey(audit),JSON.stringify(fresh)); renderAccessibility(audit);
+  }));
+}
+
+function applyAuditTabAvailability(audit) {
+  const m = audit.modules || {};
+  const available = {
+    overview:true, seo:m.seo !== 'skipped', headings:m.headings !== 'skipped', content:m.content !== 'skipped', ux:m.uxCro !== 'skipped', pages:true,
+    images:m.images !== 'skipped', performance:m.performance !== 'skipped', accessibility:m.accessibility !== 'skipped', visual:m.cssColors !== 'skipped' || m.screenshots !== 'skipped',
+    infrastructure:m.security !== 'skipped' || m.dnsTls !== 'skipped', peru:m.compliancePe !== 'skipped', iso:m.isoStandards !== 'skipped', findings:true
+  };
+  document.querySelectorAll('.dashboard-tab').forEach((button)=>{ button.hidden = available[button.dataset.tab] === false; });
+}
 
 function renderInfrastructure(audit) {
   const infra = audit.infrastructure;
@@ -425,7 +593,11 @@ function renderSeo(audit) {
     ['Enlaces totales', String(links.total || 0)],
     ['Internos rotos observados', String(links.brokenInternalObserved || 0), links.brokenInternalObserved ? 'danger-value' : 'accent-value'],
     ['Palabras rastreadas', String(seo.content?.words || 0)],
-    ['Páginas < 150 palabras', String(seo.content?.pagesUnder150Words || 0)]
+    ['Páginas < 150 palabras', String(seo.content?.pagesUnder150Words || 0)],
+    ['Profundidad máx. observada', String(seo.architecture?.maxObservedDepth ?? 0)],
+    ['Sin enlaces entrantes en muestra', String(seo.architecture?.zeroInboundWithinSample?.length || 0)],
+    ['Open Graph completo', `${seo.social?.openGraphComplete || 0}/${seo.coverage?.crawled || 0}`],
+    ['Hreflang detectado', String(seo.social?.hreflangPages || 0)]
   ]);
   $('#seoSchema').innerHTML = (seo.schemaTypes || []).length ? (seo.schemaTypes || []).map(type => `<span>${escapeHtml(type)}</span>`).join('') : '<span class="muted">Sin tipos Schema detectados.</span>';
 
@@ -475,16 +647,83 @@ function renderHeadings(audit) {
   }).join('');
 }
 
+function renderContent(audit) {
+  const content = audit.content;
+  if (!content || content.status !== 'measured') {
+    $('#contentKpis').innerHTML = '<div class="source-unavailable"><strong>Contenido no disponible</strong>No se recibió análisis textual medido.</div>';
+    return;
+  }
+  const avgWords = content.pages ? Math.round(content.wordsTotal / content.pages) : 0;
+  const kpis = [
+    [content.wordsTotal || 0, 'Palabras rastreadas'], [avgWords, 'Promedio por página'], [content.paragraphsTotal || 0, 'Párrafos'],
+    [content.sentencesTotal || 0, 'Frases'], [content.ctasDetected || 0, 'CTAs detectados'], [content.genericAnchors || 0, 'Enlaces genéricos']
+  ];
+  $('#contentKpis').innerHTML = kpis.map(([value,label], index) => `<article class="seo-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+  $('#contentTerms').innerHTML = (content.topTerms || []).length ? content.topTerms.map((item) => `<span>${escapeHtml(item.term)} <small>${item.count}</small></span>`).join('') : '<span class="muted">Sin frecuencia léxica disponible.</span>';
+  $('#contentSignals').innerHTML = metricRows([
+    ['Páginas < 150 palabras', String(content.thinPages?.length || 0)],
+    ['Promedio de frase elevado', String(content.longSentencePages?.length || 0)],
+    ['Baja coincidencia title ↔ H1', String(content.lowTitleH1OverlapPages?.length || 0)],
+    ['Bloques repetidos', String(content.duplicateParagraphGroups?.length || 0)],
+    ['Enlaces genéricos', String(content.genericAnchors || 0)],
+    ['CTAs observados', String(content.ctasDetected || 0)]
+  ]);
+  $('#contentTable').innerHTML = (audit.pages || []).map((page) => {
+    const c = page.content || {};
+    const overlap = Number.isFinite(c.titleH1Overlap) ? `${Math.round(c.titleH1Overlap * 100)}%` : 'N/D';
+    return `<tr><td>${escapeHtml(pathLabel(page.url))}</td><td>${c.wordCount || 0}</td><td>${c.sentenceCount || 0}</td><td>${Number.isFinite(c.averageWordsPerSentence) ? c.averageWordsPerSentence : 'N/D'}</td><td>${c.ctaCount || 0}</td><td>${c.genericAnchors || 0}</td><td>${overlap}</td></tr>`;
+  }).join('');
+  const groups = content.duplicateParagraphGroups || [];
+  $('#contentDuplicates').innerHTML = groups.length ? groups.map((group) => `<section class="duplicate-section"><h4>Texto repetido <span>${group.urls.length} URLs</span></h4><details><summary><strong>${escapeHtml(group.text.slice(0,180))}${group.text.length>180?'…':''}</strong><span>Ver URLs</span></summary><ul>${group.urls.map((url) => `<li>${escapeHtml(pathLabel(url))}</li>`).join('')}</ul></details></section>`).join('') : '<p class="muted">No se detectaron bloques largos repetidos entre las páginas rastreadas.</p>';
+  const ai = content.ai;
+  if (!ai || ai.status === 'disabled') $('#contentAi').innerHTML = '<div class="source-unavailable"><strong>Revisión IA no ejecutada</strong>Actívala antes de iniciar la auditoría. No afecta la puntuación técnica.</div>';
+  else if (ai.status !== 'measured' || !ai.review) $('#contentAi').innerHTML = `<div class="source-unavailable"><strong>IA no disponible</strong>${escapeHtml(ai.note || 'No se generaron sugerencias.')}</div>`;
+  else {
+    const cards = (ai.review.pages || []).flatMap((page) => (page.observations || []).map((item) => ({ ...item, url: page.url })));
+    $('#contentAi').innerHTML = `<div class="ai-card"><span>Resumen IA · ${escapeHtml(ai.model || '')}</span><strong>Análisis heurístico</strong><p>${escapeHtml(ai.review.summary || '')}</p><p class="ai-suggestion">No es un error técnico y no modifica el score.</p></div>` + cards.slice(0,12).map((item) => `<article class="ai-card"><span>${escapeHtml(item.type)} · confianza ${Math.round((item.confidence || 0)*100)}%</span><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(pathLabel(item.url))}</p><p>${escapeHtml(item.analysis)}</p><p class="ai-suggestion">${escapeHtml(item.suggestion)}</p></article>`).join('');
+  }
+}
+
+function renderUx(audit) {
+  const ux = audit.ux;
+  if (!ux || ux.status !== 'measured') { $('#uxKpis').innerHTML = '<div class="source-unavailable"><strong>UX/CRO no disponible</strong>No existe evidencia suficiente.</div>'; return; }
+  const sum = ux.summary || {};
+  const kpis = [[ux.score ?? 'N/D','Score heurístico'],[sum.ctas||0,'CTAs'],[sum.forms||0,'Formularios'],[sum.fields||0,'Campos'],[sum.unlabeledFields||0,'Sin label'],[sum.directContactLinks||0,'Contacto directo']];
+  $('#uxKpis').innerHTML = kpis.map(([value,label],index)=>`<article class="seo-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+  $('#uxSignals').innerHTML = metricRows([['Enlaces genéricos',String(sum.genericAnchors||0)],['Páginas profundidad > 3',String(sum.pagesDepthOver3||0)],['Campos sin label',String(sum.unlabeledFields||0)],['Canales directos',String(sum.directContactLinks||0)]]);
+  $('#uxMethodology').textContent = ux.methodology || '';
+  $('#uxTable').innerHTML = (ux.rows || []).map((row)=>`<tr><td>${escapeHtml(pathLabel(row.url))}</td><td>${row.ctaCount||0}</td><td>${row.forms||0}</td><td>${row.fields||0}</td><td>${row.unlabeledFields||0}</td><td>${(row.phoneLinks||0)+(row.emailLinks||0)+(row.whatsappLinks||0)}</td><td>${Number.isFinite(row.clickDepth)?row.clickDepth:'N/D'}</td></tr>`).join('');
+}
+
 function renderImages(audit) {
   const items = [];
   for (const page of audit.pages || []) for (const image of page.images || []) items.push({ page: page.url, ...image });
+  const summary = audit.imageSummary || {};
   const missingAlt = items.filter(item => item.alt === null).length;
   const emptyAlt = items.filter(item => item.alt === '').length;
   const missingDimensions = items.filter(item => !item.width || !item.height).length;
   const lazy = items.filter(item => String(item.loading).toLowerCase() === 'lazy').length;
   const responsive = items.filter(item => item.srcset).length;
-  const kpis = [[items.length,'Imágenes'],[missingAlt,'Sin atributo ALT'],[emptyAlt,'ALT vacío'],[missingDimensions,'Sin width/height'],[lazy,'Lazy loading'],[responsive,'Con srcset']];
+  const kpis = [[items.length,'Referencias'],[summary.uniqueAssets ?? new Set(items.map(i=>i.src).filter(Boolean)).size,'Recursos únicos'],[missingAlt,'Sin atributo ALT'],[missingDimensions,'Sin width/height'],[summary.oversized || 0,'> 500 KB'],[summary.broken || 0,'Con error HTTP'],[lazy,'Lazy loading'],[responsive,'Con srcset']];
   $('#imageKpis').innerHTML = kpis.map(([value,label], index) => `<article class="image-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+  $('#imageTransfer').innerHTML = metricRows([
+    ['Assets inspeccionados', String(summary.inspectedAssets ?? audit.crawl?.imageInspection?.inspected ?? 0)],
+    ['Peso conocido acumulado', formatBytes(summary.knownBytes)],
+    ['Imágenes > 500 KB', String(summary.oversized || 0)],
+    ['Formatos tradicionales pesados', String(summary.legacyLarge || 0)],
+    ['Sin fuente responsive', String(summary.noResponsiveSource || 0)],
+    ['Con sizes', String(summary.withSizes || 0)],
+    ['Con <picture>', String(summary.withPictureSources || 0)],
+    ['Decoding async', String(summary.asyncDecoding || 0)],
+    ['Resolución sobredimensionada', String(summary.renderedOversize || 0)],
+    ['Imágenes medidas en DOM', String(summary.renderedMeasured || 0)],
+    ['Fondos CSS observados', String(summary.backgroundImagesObserved || 0)],
+    ['Candidata LCP', summary.lcpCandidate ? pathLabel(summary.lcpCandidate) : 'N/D'],
+    ['ALT vacío decorativo/candidato', String(emptyAlt)]
+  ]);
+  const formats = Object.entries(summary.byFormat || {});
+  $('#imageFormats').innerHTML = formats.length ? formats.map(([format,count]) => `<span>${escapeHtml(format)} <small>${count}</small></span>`).join('') : '<span class="muted">Sin Content-Type/formato disponible.</span>';
+  $('#largestImagesTable').innerHTML = (summary.largest || []).map(item => `<tr><td title="${escapeHtml(item.url || '')}">${escapeHtml(pathLabel(item.url || ''))}</td><td>${escapeHtml(pathLabel(item.pageUrl || ''))}</td><td>${escapeHtml(item.contentType || 'N/D')}</td><td>${formatBytes(item.bytes)}</td><td>${item.status == null ? 'N/D' : statusPill(`HTTP ${item.status}`, item.status >= 400 ? 'bad':'good')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">El servidor no declaró Content-Length para recursos inspeccionados o no hubo datos disponibles.</td></tr>';
   $('#imagesTable').innerHTML = items.slice(0, 400).map(item => `<tr><td>${escapeHtml(pathLabel(item.page))}</td><td title="${escapeHtml(item.src || '')}">${escapeHtml(pathLabel(item.src || ''))}</td><td>${item.alt === null ? '<strong class="issue-text">SIN ALT</strong>' : (item.alt === '' ? '<span class="warn-text">alt=""</span>' : escapeHtml(item.alt))}</td><td>${escapeHtml(`${item.width || '—'} × ${item.height || '—'}`)}</td><td>${escapeHtml(item.loading || 'auto')}</td><td>${item.srcset ? statusPill('Sí','good') : 'No'}</td></tr>`).join('');
 }
 
@@ -492,8 +731,36 @@ function renderPages(audit) {
   $('#pagesList').innerHTML = (audit.pages || []).map((page,index) => {
     const h1 = (page.headings || []).filter(h => h.level === 1);
     const tree = (page.headings || []).slice(0,40).map(h => `<div class="mini-heading" style="--level:${h.level}"><b>H${h.level}</b><span>${escapeHtml(h.text || '(vacío)')}</span></div>`).join('');
-    return `<details class="page-audit-card" ${index === 0 ? 'open':''}><summary><div><strong>${escapeHtml(pathLabel(page.url))}</strong><span>${escapeHtml(page.title || 'Sin title')}</span></div>${statusPill(`HTTP ${page.status}`, page.status >= 400 ? 'bad':'good')}</summary><div class="page-audit-body"><dl><dt>Title</dt><dd>${escapeHtml(page.title || '—')}</dd><dt>Description</dt><dd>${escapeHtml(page.description || '—')}</dd><dt>Canonical</dt><dd>${escapeHtml(page.canonical || '—')}</dd><dt>Robots</dt><dd>${escapeHtml(page.robots || 'index/follow por defecto')}</dd><dt>Idioma</dt><dd>${escapeHtml(page.lang || '—')}</dd><dt>Viewport</dt><dd>${escapeHtml(page.viewport || '—')}</dd><dt>Palabras</dt><dd>${page.content?.wordCount || 0}</dd><dt>Imágenes</dt><dd>${page.imageCount || 0}</dd><dt>Enlaces</dt><dd>${page.linkCount || 0}</dd><dt>Schema</dt><dd>${escapeHtml((page.structuredData?.types || []).join(', ') || '—')}</dd><dt>H1</dt><dd>${h1.length} · ${escapeHtml(h1.map(h=>h.text).join(' | ') || '—')}</dd></dl><div class="mini-heading-tree"><h4>Árbol H1–H6</h4>${tree || '<p class="muted">Sin headings.</p>'}</div></div></details>`;
+    const seoRow = audit.seo?.rows?.[index] || {};
+    const social = page.openGraph?.title || page.openGraph?.description || page.openGraph?.image ? 'Open Graph detectado' : 'Sin Open Graph completo';
+    const tech = (page.technologies || []).map((item) => item.name).join(', ') || '—';
+    return `<details class="page-audit-card" ${index === 0 ? 'open':''}><summary><div><strong>${escapeHtml(pathLabel(page.url))}</strong><span>${escapeHtml(page.title || 'Sin title')}</span></div>${statusPill(`HTTP ${page.status}`, page.status >= 400 ? 'bad':'good')}</summary><div class="page-audit-body"><dl><dt>Title</dt><dd>${escapeHtml(page.title || '—')}</dd><dt>Description</dt><dd>${escapeHtml(page.description || '—')}</dd><dt>Canonical</dt><dd>${escapeHtml(page.canonical || '—')}</dd><dt>Robots</dt><dd>${escapeHtml(page.robots || 'index/follow por defecto')}</dd><dt>Idioma</dt><dd>${escapeHtml(page.lang || '—')}</dd><dt>Viewport</dt><dd>${escapeHtml(page.viewport || '—')}</dd><dt>Profundidad</dt><dd>${Number.isFinite(seoRow.clickDepth) ? seoRow.clickDepth : 'No alcanzable desde la muestra'}</dd><dt>Entrantes internos</dt><dd>${seoRow.inboundInternal ?? 0}</dd><dt>Social</dt><dd>${escapeHtml(social)}</dd><dt>Hreflang</dt><dd>${page.hreflang?.length || 0}</dd><dt>Paginación</dt><dd>${page.pagination?.prev || page.pagination?.next ? `${page.pagination?.prev ? 'prev ' : ''}${page.pagination?.next ? 'next' : ''}` : '—'}</dd><dt>Palabras</dt><dd>${page.content?.wordCount || 0}</dd><dt>Frases</dt><dd>${page.content?.sentenceCount || 0}</dd><dt>CTAs</dt><dd>${page.content?.ctaCount || 0}</dd><dt>Imágenes</dt><dd>${page.imageCount || 0}</dd><dt>Enlaces</dt><dd>${page.linkCount || 0}</dd><dt>Schema</dt><dd>${escapeHtml((page.structuredData?.types || []).join(', ') || '—')}</dd><dt>Tecnologías</dt><dd>${escapeHtml(tech)}</dd><dt>H1</dt><dd>${h1.length} · ${escapeHtml(h1.map(h=>h.text).join(' | ') || '—')}</dd></dl><div class="mini-heading-tree"><h4>Árbol H1–H6</h4>${tree || '<p class="muted">Sin headings.</p>'}</div></div></details>`;
   }).join('');
+}
+
+function renderActionPlan(audit) {
+  const findings = [...(audit.findings || [])].sort((a,b) => (severityRank[b.severity]||0) - (severityRank[a.severity]||0));
+  const immediate = findings.filter((item) => ['critical','high'].includes(item.severity)).slice(0,8);
+  const quick = findings.filter((item) => ['high','medium'].includes(item.severity) && /baja/i.test(item.effort || '')).slice(0,8);
+  const kpis = [
+    [findings.filter((item)=>item.severity==='critical').length,'Críticos'],
+    [findings.filter((item)=>item.severity==='high').length,'Altos'],
+    [quick.length,'Quick wins visibles'],
+    [findings.filter((item)=>/alta/i.test(item.effort || '')).length,'Esfuerzo alto/mixto']
+  ];
+  $('#actionPlanKpis').innerHTML = kpis.map(([value,label],index)=>`<article class="seo-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+  const cards = (items, empty) => items.length ? items.map((item,index)=>`<article class="action-item"><span>${String(index+1).padStart(2,'0')}</span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.category)} · ${escapeHtml(item.effort || 'Por evaluar')}</small><p>${escapeHtml(item.recommendation || '')}</p></div></article>`).join('') : `<p class="muted">${escapeHtml(empty)}</p>`;
+  $('#priorityActions').innerHTML = cards(immediate, 'No hay hallazgos críticos o altos en la muestra devuelta.');
+  $('#quickWins').innerHTML = cards(quick, 'No se identificaron quick wins con esfuerzo bajo entre hallazgos altos/medios.');
+  const lowEffort = (item) => /baja/i.test(item.effort || '');
+  const highImpact = (item) => ['critical','high'].includes(item.severity);
+  const buckets = [
+    ['Alto impacto · bajo esfuerzo', findings.filter((item)=>highImpact(item)&&lowEffort(item))],
+    ['Alto impacto · mayor esfuerzo', findings.filter((item)=>highImpact(item)&&!lowEffort(item))],
+    ['Mejora · bajo esfuerzo', findings.filter((item)=>!highImpact(item)&&lowEffort(item))],
+    ['Mejora · mayor esfuerzo', findings.filter((item)=>!highImpact(item)&&!lowEffort(item))]
+  ];
+  $('#actionMatrix').innerHTML = buckets.map(([label,items],index)=>`<section class="action-quadrant q${index+1}"><strong>${escapeHtml(label)}</strong><b>${items.length}</b><div>${items.slice(0,4).map((item)=>`<span title="${escapeHtml(item.title)}">${escapeHtml(item.ruleId)}</span>`).join('') || '<small>Sin hallazgos</small>'}</div></section>`).join('');
 }
 
 function renderConsistency(audit) {
@@ -515,7 +782,7 @@ function renderAudit(audit) {
   currentAudit = audit;
   $('#targetName').textContent = new URL(audit.meta.target).hostname;
   $('#auditMeta').textContent = `${audit.meta.id} · ${audit.summary.pagesCrawled} páginas · ${audit.summary.findingsTotal ?? audit.findings.length} hallazgos${audit.summary.payloadTruncated ? ` (mostrando ${audit.summary.findingsReturned} prioritarios)` : ''} · ${new Date(audit.meta.finishedAt).toLocaleString('es-PE')}`;
-  renderScores(audit); renderStats(audit); renderConsistency(audit); renderSeo(audit); renderHeadings(audit); renderImages(audit); renderPageSpeed(audit); renderBrowser(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderOverview(audit);
+  applyAuditTabAvailability(audit); renderScores(audit); renderStats(audit); renderConsistency(audit); renderActionPlan(audit); renderSeo(audit); renderHeadings(audit); renderContent(audit); renderUx(audit); renderImages(audit); renderPageSpeed(audit); renderFieldPerformance(audit); renderBrowser(audit); renderCssAnalysis(audit); renderAccessibility(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderOverview(audit);
   $('#modules').innerHTML = Object.entries(audit.modules).map(([key,value]) => `<div class="module"><b>${escapeHtml(key)}</b><span class="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join('');
 }
 
@@ -527,18 +794,27 @@ function severityLabel(value) {
 function renderOverview(audit) {
   const seo = audit.seo || {};
   const m = seo.metadata || {}, h = seo.headings || {}, c = seo.coverage || {}, links = seo.links || {};
-  $('#overviewSeoSnapshot').innerHTML = metricRows([
-    ['Indexables', String(c.indexable ?? 0)], ['Sin title', String(m.missingTitles ?? 0)], ['Titles duplicados', String(m.duplicateTitleGroups ?? 0)],
-    ['Sin description', String(m.missingDescriptions ?? 0)], ['Sin H1', String(h.pagesMissingH1 ?? 0)], ['Múltiples H1', String(h.pagesMultipleH1 ?? 0)],
-    ['Sin canonical', String(m.missingCanonicals ?? 0)], ['robots.txt', seo.robots?.status == null ? 'N/D' : `HTTP ${seo.robots.status}`],
-    ['URLs descubiertas', String(c.discovered ?? 0)], ['URLs rastreadas', String(c.crawled ?? 0)], ['Enlaces internos', String(links.internal ?? 0)], ['Enlaces externos', String(links.external ?? 0)]
-  ]);
+  if (audit.modules?.seo === 'skipped') {
+    $('#overviewSeoSnapshot').innerHTML = '<div class="source-unavailable"><strong>SEO no seleccionado</strong>El modo personalizado no incluyó este módulo.</div>';
+  } else {
+    $('#overviewSeoSnapshot').innerHTML = metricRows([
+      ['Indexables', String(c.indexable ?? 0)], ['Sin title', String(m.missingTitles ?? 0)], ['Titles duplicados', String(m.duplicateTitleGroups ?? 0)],
+      ['Sin description', String(m.missingDescriptions ?? 0)], ['Sin H1', String(h.pagesMissingH1 ?? 0)], ['Múltiples H1', String(h.pagesMultipleH1 ?? 0)],
+      ['Sin canonical', String(m.missingCanonicals ?? 0)], ['robots.txt', seo.robots?.status == null ? 'N/D' : `HTTP ${seo.robots.status}`],
+      ['URLs descubiertas', String(c.discovered ?? 0)], ['URLs rastreadas', String(c.crawled ?? 0)], ['Enlaces internos', String(links.internal ?? 0)], ['Enlaces externos', String(links.external ?? 0)]
+    ]);
+  }
   const totals = h.totals || {};
-  $('#overviewHeadingSnapshot').innerHTML = [1,2,3,4,5,6].map(level => `<div><b>${totals[`h${level}`] || 0}</b><span>H${level}</span></div>`).join('');
-  const dup = (m.duplicateDescriptions || []).length;
-  $('#overviewHeadingNote').textContent = `${h.pagesMissingH1 || 0} página(s) sin H1 · ${h.pagesMultipleH1 || 0} con múltiples H1${dup ? ` · ${dup} grupo(s) de descriptions duplicadas` : ''}.`;
+  if (audit.modules?.headings === 'skipped') {
+    $('#overviewHeadingSnapshot').innerHTML = '<div class="source-unavailable"><strong>H1–H6 no seleccionado</strong>Sin puntuación ni observaciones de headings.</div>';
+    $('#overviewHeadingNote').textContent = '';
+  } else {
+    $('#overviewHeadingSnapshot').innerHTML = [1,2,3,4,5,6].map(level => `<div><b>${totals[`h${level}`] || 0}</b><span>H${level}</span></div>`).join('');
+    const dup = (m.duplicateDescriptions || []).length;
+    $('#overviewHeadingNote').textContent = `${h.pagesMissingH1 || 0} página(s) sin H1 · ${h.pagesMultipleH1 || 0} con múltiples H1${dup ? ` · ${dup} grupo(s) de descriptions duplicadas` : ''}.`;
+  }
 
-  $('#overviewPagesTable').innerHTML = (audit.pages || []).slice(0,8).map(page => {
+  $('#overviewPagesTable').innerHTML = audit.modules?.headings === 'skipped' ? '<tr><td colspan="8" class="muted">La matriz H1–H6 no fue seleccionada en esta auditoría.</td></tr>' : (audit.pages || []).slice(0,8).map(page => {
     const counts = {1:0,2:0,3:0,4:0,5:0,6:0};
     (page.headings || []).forEach(x => { if (counts[x.level] != null) counts[x.level] += 1; });
     const h1 = (page.headings || []).find(x => x.level === 1)?.text || '—';
@@ -550,8 +826,8 @@ function renderOverview(audit) {
 
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
-    ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.8.1'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.10.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
@@ -638,7 +914,7 @@ form.addEventListener('submit', async (event) => {
   const identityPromise = loadSiteIdentity(rawTarget);
   try {
     setWorkingStep('#workingStepAudit', 'active');
-    const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url:$('#url').value, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked }) });
+    const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url:$('#url').value, auditMode:selectedAuditMode(), modules:selectedAuditMode()==='custom'?collectCustomModules():{}, devices:{ mobile:$('#deviceMobile').checked, desktop:$('#deviceDesktop').checked }, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked, aiReview:$('#aiReview')?.checked === true }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Error de auditoría.');
     currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
@@ -663,10 +939,16 @@ $('#exportPdf').addEventListener('click', async () => {
     const payload = {
       meta: currentAudit.meta, company: currentAudit.company, scores: currentAudit.scores, summary: currentAudit.summary,
       findings: currentAudit.findings.slice(0, 100),
-      performance: currentAudit.performance ? { status: currentAudit.performance.status, mobile: currentAudit.performance.mobile, desktop: currentAudit.performance.desktop } : null,
+      performance: currentAudit.performance || null,
       browser: currentAudit.browser?.moduleStatus === 'measured' ? { moduleStatus:'measured', domNodes:currentAudit.browser.domNodes, performance:currentAudit.browser.performance, contrast:currentAudit.browser.contrast, responsive:currentAudit.browser.responsive, axe:currentAudit.browser.axe, network:currentAudit.browser.network } : currentAudit.browser,
       infrastructure: currentAudit.infrastructure,
       seo: currentAudit.seo,
+      content: currentAudit.content,
+      ux: currentAudit.ux,
+      imageSummary: currentAudit.imageSummary,
+      technologies: currentAudit.technologies,
+      css: currentAudit.css,
+      accessibilityManual: currentAudit.accessibilityManual,
       pages: currentAudit.pages,
       peru: currentAudit.peru,
       iso: currentAudit.iso

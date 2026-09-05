@@ -1,12 +1,12 @@
 {
   "name": "cybergcode-web-audit",
-  "version": "0.8.1",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "description": "CYBERGCODE Web Audit Intelligence - auditoría web integral compatible con Vercel",
   "scripts": {
     "dev": "npx vercel@latest dev",
-    "check": "node --check api/audit.js && node --check api/report.js && node --check api/identity.js && node --check lib/cache/audit-cache.js && node --check lib/audit/engine.js && node --check lib/audit/finding.js && node --check lib/audit/site-identity.js && node --check lib/audit/seo-summary.js && node --check lib/config/remediations.js && node --check lib/browser/browser.js && node --check lib/browser/browser-audit.js && node --check lib/performance/pagespeed.js && node --check lib/compliance/iso.js && node --check lib/compliance/peru.js && node --check lib/infrastructure/domain-audit.js && node --check lib/security/url-guard.js && node --check public/js/theme.js && node --check public/js/app.js",
+    "check": "node --check api/audit.js && node --check api/report.js && node --check api/identity.js && node --check lib/cache/audit-cache.js && node --check lib/audit/engine.js && node --check lib/audit/page-audit.js && node --check lib/audit/scoring.js && node --check lib/audit/finding.js && node --check lib/audit/site-identity.js && node --check lib/audit/seo-summary.js && node --check lib/audit/content-analysis.js && node --check lib/audit/content-summary.js && node --check lib/audit/image-summary.js && node --check lib/audit/technology-detection.js && node --check lib/config/remediations.js && node --check lib/browser/browser.js && node --check lib/browser/browser-audit.js && node --check lib/performance/pagespeed.js && node --check lib/compliance/iso.js && node --check lib/compliance/peru.js && node --check lib/infrastructure/domain-audit.js && node --check lib/security/url-guard.js && node --check public/js/theme.js && node --check public/js/app.js && node --check lib/performance/crux.js && node --check lib/performance/browser-lab.js && node --check lib/audit/ux-summary.js && node --check lib/audit/ai-review.js && node --check lib/report/pdf.js && node --check lib/security/safe-fetch.js && node --check lib/audit/image-assets.js && node --check lib/config/audit-modes.js && node --check lib/audit/css-analysis.js && node --check lib/audit/accessibility-manual.js",
     "test": "node --test"
   },
   "engines": {

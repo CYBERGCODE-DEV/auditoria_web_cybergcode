@@ -30,3 +30,9 @@ test('una métrica externa no oculta deducciones objetivas más restrictivas', (
   const result = scoreAudit(findings, { accessibility: 99, accessibilityMeasured: true });
   assert.equal(result.categories.accessibility, 92);
 });
+
+test('contenido recibe score solo cuando el motor determinístico fue medido', () => {
+  const findings = [{ id:'c1', ruleId:'CONTENT-LINK-001', category:'content', severity:'low', penalty:1 }];
+  const result = scoreAudit(findings, { contentMeasured:true });
+  assert.equal(result.categories.content, 99);
+});

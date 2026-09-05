@@ -1,6 +1,7 @@
 import { runAudit } from '../lib/audit/engine.js';
 import { COMPANY } from '../lib/config/company.js';
 import { makeAuditCacheKey, getCachedAudit, setCachedAudit, STABLE_CACHE_TTL_SECONDS } from '../lib/cache/audit-cache.js';
+import { resolveAuditConfig } from '../lib/config/audit-modes.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -9,11 +10,27 @@ export default async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const url = body.url;
-    const maxPages = Math.min(Math.max(Number(body.maxPages) || 12, 1), 50);
-    const pageSpeed = body.pageSpeed !== false;
     const stableMode = body.stableMode !== false;
     const forceFresh = body.forceFresh === true;
-    const cacheKey = makeAuditCacheKey({ url, maxPages, pageSpeed, stableMode, engineVersion: COMPANY.engineVersion });
+    const config = resolveAuditConfig({
+      auditMode: body.auditMode || 'complete',
+      modules: body.modules || {},
+      devices: body.devices || {},
+      maxPages: body.maxPages,
+      pageSpeed: body.pageSpeed !== false,
+      aiReview: body.aiReview === true
+    });
+    const cacheKey = makeAuditCacheKey({
+      url,
+      maxPages: config.maxPages,
+      pageSpeed: config.pageSpeed,
+      stableMode,
+      aiReview: config.aiReview,
+      auditMode: config.mode,
+      modules: config.modules,
+      devices: config.devices,
+      engineVersion: COMPANY.engineVersion
+    });
 
     if (stableMode && !forceFresh) {
       const cached = await getCachedAudit(cacheKey);
@@ -24,7 +41,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const result = await runAudit({ url, maxPages, pageSpeed, stableMode });
+    const result = await runAudit({ url, maxPages: config.maxPages, pageSpeed: config.pageSpeed, stableMode, aiReview: config.aiReview, auditMode: config.mode, modules: config.modules, devices: config.devices });
     if (result.meta?.consistency) result.meta.consistency.fingerprint = cacheKey.split(':').pop().slice(0, 12).toUpperCase();
     let cacheState = 'BYPASS';
     if (stableMode) cacheState = (await setCachedAudit(cacheKey, result, STABLE_CACHE_TTL_SECONDS)) ? 'STORED' : 'BYPASS';

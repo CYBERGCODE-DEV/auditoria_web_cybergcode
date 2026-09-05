@@ -1,19 +1,14 @@
-CYBERGCODE WEB AUDIT INTELLIGENCE v0.8.1
+CYBERGCODE WEB AUDIT INTELLIGENCE v0.10.0
 
-1. Descomprimir este ZIP.
-2. Copiar TODOS los archivos a la raíz del repositorio GitHub conectado a Vercel.
-   La raíz debe contener: package.json, vercel.json, api/, lib/, public/, test/.
-3. Commit + push a la rama de producción.
-4. En Vercel comprobar que el deployment corresponde al commit nuevo y promoverlo a Production.
-5. Abrir https://auditoria-web-cybergcode.vercel.app/ y confirmar: ENGINE 0.8.1.
-6. Hacer Ctrl+F5 una vez.
-7. Iniciar auditoría. El loader correcto debe:
-   - ocupar toda la pantalla;
-   - usar tema oscuro azul/cyan/violeta;
-   - mostrar la marca CYBERGCODE;
-   - mostrar el dominio auditado;
-   - buscar y mostrar el logo real del dominio en el centro;
-   - mostrar tiempo transcurrido real, no porcentaje ficticio;
-   - indicar fallback textual si el dominio no expone un logo seguro/usable.
-
-Si la web sigue mostrando ENGINE 0.7.0, Vercel sigue apuntando al deployment/repositorio/root directory anterior.
+1. El ZIP debe extraerse directamente en la raíz del repositorio.
+2. Verificar package.json, vercel.json, api/, lib/ y public/ en raíz.
+3. npm install
+4. npm test
+5. npm run check
+6. Push a GitHub y esperar deployment de Vercel.
+7. Abrir producción y confirmar ENGINE 0.10.0.
+8. Probar modo Rápida: no debe ejecutar ni puntuar Performance/ISO/Accesibilidad si no corresponden al preset.
+9. Probar modo Completa con Móvil + Escritorio.
+10. Probar modo Personalizada desactivando varios módulos: sus tabs deben desaparecer y sus scores deben ser null/no renderizados.
+11. Revisar Diseño > CSS y Accesibilidad > Checklist manual.
+12. Generar PDF y confirmar que refleja la misma configuración y datos del dashboard.

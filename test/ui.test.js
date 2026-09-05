@@ -6,9 +6,9 @@ const html = fs.readFileSync(new URL('../public/index.html', import.meta.url), '
 const css = fs.readFileSync(new URL('../public/css/app.css', import.meta.url), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 
-test('dashboard prioriza SEO, H1-H6 y páginas en once menús interactivos', () => {
+test('dashboard prioriza SEO, H1-H6, contenido y UX en catorce menús interactivos', () => {
   const tabs = [...html.matchAll(/data-tab="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(tabs, ['overview','seo','headings','pages','images','performance','visual','infrastructure','peru','iso','findings']);
+  assert.deepEqual(tabs, ['overview','seo','headings','content','ux','pages','images','performance','accessibility','visual','infrastructure','peru','iso','findings']);
 });
 
 test('interfaz incluye modo estable, tema y preferencias de movimiento reducido', () => {
