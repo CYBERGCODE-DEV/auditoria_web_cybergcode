@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.12.0
+# CYBERGCODE Web Audit Intelligence v0.13.2
 
 Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
 
@@ -215,7 +215,7 @@ npx vercel dev
 
 1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
 2. Hacer push a la rama conectada a Vercel.
-3. Confirmar **ENGINE 0.12.0** y perfil **CG-STABLE-3**.
+3. Confirmar **ENGINE 0.13.2** y perfil **CG-STABLE-3**.
 4. Probar primero 12–25 páginas.
 5. Probar después 100 páginas y verificar el panel de progreso por lotes.
 6. Recargar durante un job y confirmar que aparece **Reanudar**.
@@ -249,3 +249,7 @@ Usuarios, clientes, proyectos, PostgreSQL, histórico, comparación antes/despu�
 CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C.  
 RUC 20615849988  
 cybergcode.com · Lambayeque, Perú
+
+## Paquete de producción
+
+Esta distribución **v0.13.2 Production** excluye deliberadamente toda la carpeta de pruebas y archivos `*.test.js`. El comando `npm test` también fue retirado del `package.json`. Se conserva `npm run check` porque únicamente valida la sintaxis del código de producción y no incorpora fixtures ni suites de pruebas al despliegue.
