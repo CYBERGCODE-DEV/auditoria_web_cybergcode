@@ -9,6 +9,7 @@ let currentAudit = null;
 let currentCacheState = '—';
 let workingStartedAt = 0;
 let workingTimerHandle = null;
+let currentLargeJobId = null;
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 function syncThemeButton() {
@@ -66,10 +67,26 @@ $('#selectAllModules')?.addEventListener('click', () => {
   const shouldSelect = inputs.some((input) => !input.checked);
   inputs.forEach((input) => { input.checked = shouldSelect; });
   syncAuditModeUi({ initial:true });
+
+function syncLargeAuditHint() {
+  const pages = Number($('#maxPages')?.value || 0);
+  const large = pages > 50;
+  $('#largeAuditHint')?.toggleAttribute('hidden', !large);
+}
+$('#maxPages')?.addEventListener('change', syncLargeAuditHint);
+syncLargeAuditHint();
 });
 $('#deviceMobile')?.addEventListener('change', () => { if (!$('#deviceMobile').checked && !$('#deviceDesktop').checked) $('#deviceDesktop').checked = true; });
 $('#deviceDesktop')?.addEventListener('change', () => { if (!$('#deviceMobile').checked && !$('#deviceDesktop').checked) $('#deviceMobile').checked = true; });
 syncAuditModeUi({ initial:true });
+
+function syncLargeAuditHint() {
+  const pages = Number($('#maxPages')?.value || 0);
+  const large = pages > 50;
+  $('#largeAuditHint')?.toggleAttribute('hidden', !large);
+}
+$('#maxPages')?.addEventListener('change', syncLargeAuditHint);
+syncLargeAuditHint();
 
 function activateDashboardTab(name = 'overview') {
   document.querySelectorAll('.dashboard-tab').forEach((button) => {
@@ -77,6 +94,8 @@ function activateDashboardTab(name = 'overview') {
     button.classList.toggle('active', active);
     button.setAttribute('aria-selected', String(active));
   });
+  const mobileSelect = $('#dashboardTabSelect');
+  if (mobileSelect && mobileSelect.value !== name) mobileSelect.value = name;
   document.querySelectorAll('.analysis-view').forEach((section) => {
     const active = section.dataset.view === name;
     section.classList.toggle('active', active);
@@ -85,9 +104,11 @@ function activateDashboardTab(name = 'overview') {
       section.querySelectorAll('.panel').forEach((panel, index) => panel.style.setProperty('--delay', `${Math.min(index, 10) * 55}ms`));
     }
   });
+  syncResponsiveTableLabels();
 }
 
 document.querySelectorAll('.dashboard-tab').forEach((button) => button.addEventListener('click', () => activateDashboardTab(button.dataset.tab)));
+$('#dashboardTabSelect')?.addEventListener('change', (event) => activateDashboardTab(event.target.value));
 
 function initRevealAnimations() {
   const items = document.querySelectorAll('.reveal');
@@ -100,6 +121,29 @@ function initRevealAnimations() {
     });
   }, { threshold: 0.12 });
   items.forEach((item) => observer.observe(item));
+}
+
+function syncResponsiveTableLabels() {
+  document.querySelectorAll('.audit-table').forEach((table) => {
+    const headers = [...table.querySelectorAll('thead th')].map((cell) => cell.textContent.trim());
+    table.querySelectorAll('tbody tr').forEach((row) => {
+      [...row.children].forEach((cell, index) => {
+        if (cell.tagName !== 'TD') return;
+        const label = headers[index] || `Columna ${index + 1}`;
+        cell.setAttribute('data-label', label);
+      });
+    });
+  });
+}
+
+function syncDashboardTabAvailability() {
+  const select = $('#dashboardTabSelect');
+  if (!select) return;
+  [...select.options].forEach((option) => {
+    const button = document.querySelector(`.dashboard-tab[data-tab="${option.value}"]`);
+    option.hidden = !!button?.hidden;
+    option.disabled = !!button?.hidden;
+  });
 }
 
 function view(name) {
@@ -141,6 +185,7 @@ function setWorkingStep(id, state = '') {
 }
 
 initRevealAnimations();
+window.addEventListener('resize', syncResponsiveTableLabels);
 
 function escapeHtml(value='') {
   return String(value).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -413,11 +458,12 @@ function renderAccessibility(audit) {
 function applyAuditTabAvailability(audit) {
   const m = audit.modules || {};
   const available = {
-    overview:true, seo:m.seo !== 'skipped', headings:m.headings !== 'skipped', content:m.content !== 'skipped', ux:m.uxCro !== 'skipped', pages:true,
+    overview:true, seo:m.seo !== 'skipped', headings:m.headings !== 'skipped', content:m.content !== 'skipped', ux:m.uxCro !== 'skipped', pages:true, coverage:true,
     images:m.images !== 'skipped', performance:m.performance !== 'skipped', accessibility:m.accessibility !== 'skipped', visual:m.cssColors !== 'skipped' || m.screenshots !== 'skipped',
     infrastructure:m.security !== 'skipped' || m.dnsTls !== 'skipped', peru:m.compliancePe !== 'skipped', iso:m.isoStandards !== 'skipped', findings:true
   };
   document.querySelectorAll('.dashboard-tab').forEach((button)=>{ button.hidden = available[button.dataset.tab] === false; });
+  syncDashboardTabAvailability();
 }
 
 function renderInfrastructure(audit) {
@@ -708,6 +754,7 @@ function renderImages(audit) {
   $('#imageKpis').innerHTML = kpis.map(([value,label], index) => `<article class="image-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
   $('#imageTransfer').innerHTML = metricRows([
     ['Assets inspeccionados', String(summary.inspectedAssets ?? audit.crawl?.imageInspection?.inspected ?? 0)],
+    ['Cobertura HEAD', summary.inspectionCoverage ? `${summary.inspectionCoverage.inspected}/${summary.inspectionCoverage.totalUnique}${summary.inspectionCoverage.complete ? ' · completa' : ' · parcial'}` : 'N/D'],
     ['Peso conocido acumulado', formatBytes(summary.knownBytes)],
     ['Imágenes > 500 KB', String(summary.oversized || 0)],
     ['Formatos tradicionales pesados', String(summary.legacyLarge || 0)],
@@ -727,15 +774,78 @@ function renderImages(audit) {
   $('#imagesTable').innerHTML = items.slice(0, 400).map(item => `<tr><td>${escapeHtml(pathLabel(item.page))}</td><td title="${escapeHtml(item.src || '')}">${escapeHtml(pathLabel(item.src || ''))}</td><td>${item.alt === null ? '<strong class="issue-text">SIN ALT</strong>' : (item.alt === '' ? '<span class="warn-text">alt=""</span>' : escapeHtml(item.alt))}</td><td>${escapeHtml(`${item.width || '—'} × ${item.height || '—'}`)}</td><td>${escapeHtml(item.loading || 'auto')}</td><td>${item.srcset ? statusPill('Sí','good') : 'No'}</td></tr>`).join('');
 }
 
+function fullPageDetailMarkup(page) {
+  const h1 = (page.headings || []).filter((h) => h.level === 1);
+  const tree = (page.headings || []).slice(0, 120).map((h) => `<div class="mini-heading" style="--level:${h.level}"><b>H${h.level}</b><span>${escapeHtml(h.text || '(vacío)')}</span></div>`).join('');
+  const images = (page.images || []).slice(0, 40).map((img) => `<li><code>${escapeHtml(pathLabel(img.src || ''))}</code> · ALT: ${escapeHtml(img.alt == null ? 'AUSENTE' : (img.alt || '(vacío)'))}</li>`).join('');
+  return `<div class="large-page-detail"><h4>Detalle completo almacenado</h4><p><b>Headings:</b> ${page.headings?.length || 0} · <b>Imágenes:</b> ${page.images?.length || 0} · <b>Enlaces:</b> ${page.links?.length || 0}</p><div class="mini-heading-tree">${tree || '<p class="muted">Sin headings.</p>'}</div>${images ? `<details><summary>Imágenes de esta URL</summary><ul>${images}</ul></details>` : ''}</div>`;
+}
+
+async function loadLargePageDetail(button) {
+  const id = button.dataset.jobId;
+  const url = button.dataset.pageUrl;
+  const target = document.getElementById(button.dataset.targetId);
+  if (!id || !url || !target) return;
+  button.disabled = true;
+  button.textContent = 'Cargando…';
+  try {
+    const response = await fetch(`/api/jobs/page?id=${encodeURIComponent(id)}&url=${encodeURIComponent(url)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'No se pudo cargar el detalle.');
+    target.innerHTML = fullPageDetailMarkup(data.page);
+    button.remove();
+  } catch (error) {
+    target.innerHTML = `<p class="warn-text">${escapeHtml(error.message)}</p>`;
+    button.disabled = false;
+    button.textContent = 'Reintentar detalle';
+  }
+}
+
 function renderPages(audit) {
+  const largeJobId = audit.meta?.largeAudit?.jobId || null;
   $('#pagesList').innerHTML = (audit.pages || []).map((page,index) => {
     const h1 = (page.headings || []).filter(h => h.level === 1);
     const tree = (page.headings || []).slice(0,40).map(h => `<div class="mini-heading" style="--level:${h.level}"><b>H${h.level}</b><span>${escapeHtml(h.text || '(vacío)')}</span></div>`).join('');
     const seoRow = audit.seo?.rows?.[index] || {};
     const social = page.openGraph?.title || page.openGraph?.description || page.openGraph?.image ? 'Open Graph detectado' : 'Sin Open Graph completo';
     const tech = (page.technologies || []).map((item) => item.name).join(', ') || '—';
-    return `<details class="page-audit-card" ${index === 0 ? 'open':''}><summary><div><strong>${escapeHtml(pathLabel(page.url))}</strong><span>${escapeHtml(page.title || 'Sin title')}</span></div>${statusPill(`HTTP ${page.status}`, page.status >= 400 ? 'bad':'good')}</summary><div class="page-audit-body"><dl><dt>Title</dt><dd>${escapeHtml(page.title || '—')}</dd><dt>Description</dt><dd>${escapeHtml(page.description || '—')}</dd><dt>Canonical</dt><dd>${escapeHtml(page.canonical || '—')}</dd><dt>Robots</dt><dd>${escapeHtml(page.robots || 'index/follow por defecto')}</dd><dt>Idioma</dt><dd>${escapeHtml(page.lang || '—')}</dd><dt>Viewport</dt><dd>${escapeHtml(page.viewport || '—')}</dd><dt>Profundidad</dt><dd>${Number.isFinite(seoRow.clickDepth) ? seoRow.clickDepth : 'No alcanzable desde la muestra'}</dd><dt>Entrantes internos</dt><dd>${seoRow.inboundInternal ?? 0}</dd><dt>Social</dt><dd>${escapeHtml(social)}</dd><dt>Hreflang</dt><dd>${page.hreflang?.length || 0}</dd><dt>Paginación</dt><dd>${page.pagination?.prev || page.pagination?.next ? `${page.pagination?.prev ? 'prev ' : ''}${page.pagination?.next ? 'next' : ''}` : '—'}</dd><dt>Palabras</dt><dd>${page.content?.wordCount || 0}</dd><dt>Frases</dt><dd>${page.content?.sentenceCount || 0}</dd><dt>CTAs</dt><dd>${page.content?.ctaCount || 0}</dd><dt>Imágenes</dt><dd>${page.imageCount || 0}</dd><dt>Enlaces</dt><dd>${page.linkCount || 0}</dd><dt>Schema</dt><dd>${escapeHtml((page.structuredData?.types || []).join(', ') || '—')}</dd><dt>Tecnologías</dt><dd>${escapeHtml(tech)}</dd><dt>H1</dt><dd>${h1.length} · ${escapeHtml(h1.map(h=>h.text).join(' | ') || '—')}</dd></dl><div class="mini-heading-tree"><h4>Árbol H1–H6</h4>${tree || '<p class="muted">Sin headings.</p>'}</div></div></details>`;
+    const detailId = `page-detail-${index}`;
+    const detailButton = largeJobId ? `<button type="button" class="mini-action load-page-detail" data-job-id="${escapeHtml(largeJobId)}" data-page-url="${escapeHtml(page.url)}" data-target-id="${detailId}">Cargar detalle completo</button><div id="${detailId}"></div>` : '';
+    return `<details class="page-audit-card" ${index === 0 ? 'open':''}><summary><div><strong>${escapeHtml(pathLabel(page.url))}</strong><span>${escapeHtml(page.title || 'Sin title')}</span></div>${statusPill(`HTTP ${page.status}`, page.status >= 400 ? 'bad':'good')}</summary><div class="page-audit-body"><dl><dt>Title</dt><dd>${escapeHtml(page.title || '—')}</dd><dt>Description</dt><dd>${escapeHtml(page.description || '—')}</dd><dt>Canonical</dt><dd>${escapeHtml(page.canonical || '—')}</dd><dt>Robots</dt><dd>${escapeHtml(page.robots || 'index/follow por defecto')}</dd><dt>Idioma</dt><dd>${escapeHtml(page.lang || '—')}</dd><dt>Viewport</dt><dd>${escapeHtml(page.viewport || '—')}</dd><dt>Profundidad</dt><dd>${Number.isFinite(seoRow.clickDepth) ? seoRow.clickDepth : 'No alcanzable desde la muestra'}</dd><dt>Entrantes internos</dt><dd>${seoRow.inboundInternal ?? 0}</dd><dt>Social</dt><dd>${escapeHtml(social)}</dd><dt>Hreflang</dt><dd>${page.hreflang?.length || 0}</dd><dt>Paginación</dt><dd>${page.pagination?.prev || page.pagination?.next ? `${page.pagination?.prev ? 'prev ' : ''}${page.pagination?.next ? 'next' : ''}` : '—'}</dd><dt>Palabras</dt><dd>${page.content?.wordCount || 0}</dd><dt>Frases</dt><dd>${page.content?.sentenceCount || 0}</dd><dt>CTAs</dt><dd>${page.content?.ctaCount || 0}</dd><dt>Imágenes</dt><dd>${page.imageCount || 0}</dd><dt>Enlaces</dt><dd>${page.linkCount || 0}</dd><dt>Schema</dt><dd>${escapeHtml((page.structuredData?.types || []).join(', ') || '—')}</dd><dt>Tecnologías</dt><dd>${escapeHtml(tech)}</dd><dt>H1</dt><dd>${h1.length} · ${escapeHtml(h1.map(h=>h.text).join(' | ') || '—')}</dd></dl><div class="mini-heading-tree"><h4>Árbol H1–H6${largeJobId ? ' (resumen)' : ''}</h4>${tree || '<p class="muted">Sin headings.</p>'}</div>${detailButton}</div></details>`;
   }).join('');
+  document.querySelectorAll('.load-page-detail').forEach((button) => button.addEventListener('click', () => loadLargePageDetail(button)));
+}
+
+function renderCoverage(audit) {
+  const sampling = audit.templateSampling || {};
+  const templates = sampling.templates || [];
+  const reps = sampling.representatives || [];
+  const browserSamples = sampling.browserSamples?.samples || [];
+  const large = audit.meta?.largeAudit || null;
+  const discovered = audit.summary?.pagesDiscovered ?? audit.seo?.coverage?.discovered ?? 0;
+  const crawled = audit.summary?.pagesCrawled ?? 0;
+  const groups = sampling.coverage?.groups ?? templates.length;
+  const kpis = [[crawled,'Páginas HTML'],[discovered,'URLs descubiertas'],[groups,'Plantillas observadas'],[reps.length,'Representantes']];
+  $('#coverageKpis').innerHTML = kpis.map(([value,label],index)=>`<article class="seo-kpi" style="--delay:${index*35}ms"><b>${value}</b><span>${escapeHtml(label)}</span></article>`).join('');
+  $('#coverageMetrics').innerHTML = metricRows([
+    ['Modo', large ? 'Job por lotes' : 'Auditoría directa'],
+    ['Límite solicitado', String(large?.requestedPages ?? audit.crawl?.limit ?? crawled)],
+    ['URLs procesadas', String(large?.processedUrls ?? crawled)],
+    ['HTML correctos', String(large?.successfulPages ?? crawled)],
+    ['URLs fallidas', String(large?.failedUrls ?? audit.summary?.errors ?? 0)],
+    ['Fin de rastreo', large?.crawlCompleteReason || 'límite/directo'],
+    ['Almacenamiento', large?.detailStorage || 'resultado directo'],
+    ['Método plantillas', sampling.method || 'URL + estructura']
+  ]);
+  $('#templateGroups').innerHTML = templates.length ? templates.map((item)=>`<article class="template-card"><span>${escapeHtml(item.id || '')} · confianza ${Math.round((item.confidence || 0)*100)}%</span><strong>${escapeHtml(item.label || item.type || 'Plantilla')}</strong><b>${item.count || 0}</b><small>páginas · mediana ${item.medianWords || 0} palabras</small><code title="${escapeHtml(item.representativeUrl || '')}">${escapeHtml(pathLabel(item.representativeUrl || '—'))}</code></article>`).join('') : '<p class="muted">No se generó agrupación de plantillas.</p>';
+  const rows = reps.map((rep) => {
+    const sample = browserSamples.find((x) => x.templateId === rep.templateId);
+    const state = sample?.status || (audit.meta?.largeAudit ? 'pendiente/no requerido' : 'representante');
+    const cls = sample?.status === 'measured' ? 'measured' : sample?.status === 'unavailable' ? 'unavailable' : '';
+    const perf = sample?.performance ? [Number.isFinite(sample.performance.ttfbMs) ? `TTFB ${Math.round(sample.performance.ttfbMs)} ms` : null, Number.isFinite(sample.performance.lcpMs) ? `LCP ${Math.round(sample.performance.lcpMs)} ms` : null].filter(Boolean).join(' · ') : '';
+    return `<article class="representative-item ${cls}"><span>${escapeHtml(rep.templateId)}</span><div><strong>${escapeHtml(rep.label)}</strong><small title="${escapeHtml(rep.url)}">${escapeHtml(pathLabel(rep.url))} · representa ${rep.count} página(s)${perf ? ` · ${escapeHtml(perf)}` : ''}</small></div><b>${escapeHtml(state)}</b></article>`;
+  });
+  $('#representativeSamples').innerHTML = rows.length ? rows.join('') : '<p class="muted">Sin muestra representativa disponible.</p>';
 }
 
 function renderActionPlan(audit) {
@@ -765,7 +875,7 @@ function renderActionPlan(audit) {
 
 function renderConsistency(audit) {
   const c = audit.meta?.consistency || {};
-  const cacheLabels = { HIT:'Reutilizado · mismo resultado', STORED:'Guardado · 30 min', BYPASS:'Sin caché', '—':'Sin dato' };
+  const cacheLabels = { HIT:'Reutilizado · mismo resultado', STORED:'Guardado · 30 min', BYPASS:'Sin caché', JOB:'Job por lotes', '—':'Sin dato' };
   $('#cacheStatus').textContent = cacheLabels[currentCacheState] || currentCacheState;
   const rows = [
     ['Modo', c.mode === 'stable' ? 'Estable' : 'En vivo'],
@@ -782,7 +892,8 @@ function renderAudit(audit) {
   currentAudit = audit;
   $('#targetName').textContent = new URL(audit.meta.target).hostname;
   $('#auditMeta').textContent = `${audit.meta.id} · ${audit.summary.pagesCrawled} páginas · ${audit.summary.findingsTotal ?? audit.findings.length} hallazgos${audit.summary.payloadTruncated ? ` (mostrando ${audit.summary.findingsReturned} prioritarios)` : ''} · ${new Date(audit.meta.finishedAt).toLocaleString('es-PE')}`;
-  applyAuditTabAvailability(audit); renderScores(audit); renderStats(audit); renderConsistency(audit); renderActionPlan(audit); renderSeo(audit); renderHeadings(audit); renderContent(audit); renderUx(audit); renderImages(audit); renderPageSpeed(audit); renderFieldPerformance(audit); renderBrowser(audit); renderCssAnalysis(audit); renderAccessibility(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderOverview(audit);
+  applyAuditTabAvailability(audit); renderScores(audit); renderStats(audit); renderConsistency(audit); renderActionPlan(audit); renderSeo(audit); renderHeadings(audit); renderContent(audit); renderUx(audit); renderImages(audit); renderPageSpeed(audit); renderFieldPerformance(audit); renderBrowser(audit); renderCssAnalysis(audit); renderAccessibility(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderCoverage(audit); renderOverview(audit);
+  syncResponsiveTableLabels();
   $('#modules').innerHTML = Object.entries(audit.modules).map(([key,value]) => `<div class="module"><b>${escapeHtml(key)}</b><span class="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join('');
 }
 
@@ -827,7 +938,7 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.10.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.12.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
@@ -901,6 +1012,152 @@ async function loadSiteIdentity(raw) {
   }
 }
 
+function updateLargeJobProgress(job) {
+  const panel = $('#jobProgressPanel');
+  if (!panel || !job) return;
+  panel.hidden = false;
+  const processed = Number(job.processedCount || 0);
+  const max = Math.max(1, Number(job.maxPages || 1));
+  const denominator = job.crawlCompleteReason === 'queue-exhausted' ? Math.max(1, processed) : max;
+  const ratio = job.status === 'crawl-complete' || job.status === 'finalizing' || job.status === 'completed' ? 100 : Math.min(100, Math.round((processed / denominator) * 100));
+  const phase = job.status === 'finalizing' ? 'Consolidando resultados' : job.status === 'crawl-complete' ? 'Rastreo HTML completado' : job.status === 'completed' ? 'Auditoría completada' : 'Rastreo por lotes';
+  $('#jobProgressPhase').textContent = phase;
+  $('#jobProgressCount').textContent = job.crawlCompleteReason === 'queue-exhausted' ? `${processed} URLs procesadas · cola agotada antes del límite ${max}` : `${processed} / ${max} URLs procesadas · ${job.successfulCount || 0} HTML · ${job.failedCount || 0} fallidas`;
+  $('#jobProgressBar').style.width = `${ratio}%`;
+  $('#jobProgressDetail').textContent = `Descubiertas: ${job.discoveredCount || 0} · Cola: ${job.queueRemaining || 0} · Lotes guardados: ${job.chunkCount || 0}.`;
+  if (job.status === 'crawl-complete') { setWorkingStep('#workingStepAudit', 'done'); setWorkingStep('#workingStepConsolidate', 'active'); }
+  if (job.status === 'finalizing') setWorkingStep('#workingStepConsolidate', 'active');
+  if (job.status === 'completed') setWorkingStep('#workingStepConsolidate', 'done');
+}
+
+const LARGE_JOB_STORAGE_KEY = 'cybergcode:active-large-job';
+
+function saveLargeJobReference(job, target) {
+  if (!job?.id) return;
+  localStorage.setItem(LARGE_JOB_STORAGE_KEY, JSON.stringify({ id:job.id, target:target || job.target, savedAt:new Date().toISOString() }));
+}
+
+function clearLargeJobReference() {
+  localStorage.removeItem(LARGE_JOB_STORAGE_KEY);
+  $('#resumeJob')?.classList.add('hidden');
+}
+
+function readLargeJobReference() {
+  try { return JSON.parse(localStorage.getItem(LARGE_JOB_STORAGE_KEY) || 'null'); } catch { return null; }
+}
+
+async function getLargeJobStatus(id) {
+  const response = await fetch(`/api/jobs/status?id=${encodeURIComponent(id)}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No se pudo consultar el job.');
+  return data.job;
+}
+
+async function getLargeJobResult(id) {
+  const response = await fetch(`/api/jobs/result?id=${encodeURIComponent(id)}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No se pudo recuperar el resultado del job.');
+  return data;
+}
+
+async function runLargeAudit(payload = null, { resumeId = null, resumeTarget = null } = {}) {
+  let job;
+  if (resumeId) {
+    job = await getLargeJobStatus(resumeId);
+    currentLargeJobId = job.id;
+    updateLargeJobProgress(job);
+    if (job.status === 'completed') {
+      const stored = await getLargeJobResult(job.id);
+      clearLargeJobReference();
+      return stored.result;
+    }
+  } else {
+    const startResponse = await fetch('/api/jobs/start', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
+    const startData = await startResponse.json();
+    if (!startResponse.ok) throw new Error(startData.error || 'No se pudo iniciar el job de auditoría.');
+    job = startData.job;
+    currentLargeJobId = job.id;
+    saveLargeJobReference(job, payload?.url || job.target);
+    updateLargeJobProgress(job);
+  }
+
+  while (job.status === 'crawling') {
+    const response = await fetch('/api/jobs/process', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:job.id }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Falló un lote del rastreo.');
+    job = data.job;
+    saveLargeJobReference(job, resumeTarget || payload?.url || job.target);
+    updateLargeJobProgress(job);
+    if (data.job?.busy) await new Promise((resolve) => setTimeout(resolve, 900));
+    else await new Promise((resolve) => setTimeout(resolve, 120));
+  }
+
+  if (job.status === 'failed') { clearLargeJobReference(); throw new Error(job.error || 'El job de auditoría falló.'); }
+  if (job.status === 'cancelled') { clearLargeJobReference(); throw new Error('La auditoría grande fue cancelada.'); }
+  if (job.status !== 'crawl-complete' && job.status !== 'finalizing') throw new Error(`Estado de job inesperado: ${job.status}`);
+  updateLargeJobProgress({ ...job, status:'finalizing' });
+  const finalResponse = await fetch('/api/jobs/finalize', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:job.id }) });
+  const finalData = await finalResponse.json();
+  if (!finalResponse.ok) throw new Error(finalData.error || 'No se pudo consolidar la auditoría grande.');
+  updateLargeJobProgress(finalData.job);
+  clearLargeJobReference();
+  return finalData.result;
+}
+
+async function discoverResumableJob() {
+  const ref = readLargeJobReference();
+  if (!ref?.id) return;
+  try {
+    const job = await getLargeJobStatus(ref.id);
+    if (!job || job.status === 'failed' || job.status === 'cancelled') { clearLargeJobReference(); return; }
+    const box = $('#resumeJob');
+    box.classList.remove('hidden');
+    const status = job.status === 'completed' ? 'resultado listo' : `${job.processedCount || 0}/${job.maxPages || '?'} URLs procesadas`;
+    $('#resumeJobText').textContent = `${ref.target || job.target} · ${status} · job ${job.id}`;
+    $('#resumeJobButton').textContent = job.status === 'completed' ? 'Ver resultado' : 'Reanudar';
+    $('#resumeJobButton').dataset.jobId = job.id;
+    $('#resumeJobButton').dataset.target = ref.target || job.target || '';
+  } catch { clearLargeJobReference(); }
+}
+
+$('#resumeJobButton')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  const id = button.dataset.jobId;
+  const target = button.dataset.target;
+  if (!id) return;
+  button.disabled = true;
+  submitButton.disabled = true;
+  view('working');
+  startWorkingTimer();
+  prepareWorkingIdentity(target);
+  loadSiteIdentity(target).catch(() => null);
+  currentCacheState = 'JOB';
+  try {
+    const result = await runLargeAudit(null, { resumeId:id, resumeTarget:target });
+    stopWorkingTimer();
+    renderAudit(result);
+    view('dashboard');
+  } catch (error) {
+    stopWorkingTimer();
+    $('#errorText').textContent = error.message;
+    view('error');
+  } finally {
+    button.disabled = false;
+    submitButton.disabled = false;
+  }
+});
+
+$('#discardJobButton')?.addEventListener('click', async () => {
+  const ref = readLargeJobReference();
+  if (ref?.id) {
+    try {
+      await fetch('/api/jobs/cancel', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:ref.id }) });
+    } catch { /* el TTL del job también limpia el estado temporal */ }
+  }
+  clearLargeJobReference();
+});
+discoverResumableJob();
+
 document.querySelectorAll('[data-open-tab]').forEach(button => button.addEventListener('click', () => activateDashboardTab(button.dataset.openTab)));
 document.querySelectorAll('[data-jump-tab]').forEach(button => button.addEventListener('click', () => { if (!currentAudit) return; activateDashboardTab(button.dataset.jumpTab); document.querySelector('.dashboard-nav')?.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block:'start'}); }));
 
@@ -914,10 +1171,18 @@ form.addEventListener('submit', async (event) => {
   const identityPromise = loadSiteIdentity(rawTarget);
   try {
     setWorkingStep('#workingStepAudit', 'active');
-    const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url:$('#url').value, auditMode:selectedAuditMode(), modules:selectedAuditMode()==='custom'?collectCustomModules():{}, devices:{ mobile:$('#deviceMobile').checked, desktop:$('#deviceDesktop').checked }, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked, aiReview:$('#aiReview')?.checked === true }) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Error de auditoría.');
-    currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
+    const payload = { url:$('#url').value, auditMode:selectedAuditMode(), modules:selectedAuditMode()==='custom'?collectCustomModules():{}, devices:{ mobile:$('#deviceMobile').checked, desktop:$('#deviceDesktop').checked }, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked, aiReview:$('#aiReview')?.checked === true };
+    let data;
+    if (payload.maxPages > 50) {
+      currentCacheState = 'JOB';
+      data = await runLargeAudit(payload);
+    } else {
+      $('#jobProgressPanel').hidden = true;
+      const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
+      data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Error de auditoría.');
+      currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
+    }
     await identityPromise.catch(() => null);
     setWorkingStep('#workingStepAudit', 'done');
     stopWorkingTimer();
@@ -929,7 +1194,7 @@ form.addEventListener('submit', async (event) => {
 });
 
 $('#severityFilter').addEventListener('change', () => currentAudit && renderFindings(currentAudit));
-$('#newAudit').addEventListener('click', () => { stopWorkingTimer(); currentAudit = null; view('hero'); $('#url').focus(); });
+$('#newAudit').addEventListener('click', () => { stopWorkingTimer(); currentAudit = null; currentLargeJobId = null; $('#jobProgressPanel').hidden = true; view('hero'); $('#url').focus(); });
 $('#retryButton').addEventListener('click', () => { stopWorkingTimer(); view('hero'); });
 $('#exportPdf').addEventListener('click', async () => {
   if (!currentAudit) return;
@@ -951,7 +1216,8 @@ $('#exportPdf').addEventListener('click', async () => {
       accessibilityManual: currentAudit.accessibilityManual,
       pages: currentAudit.pages,
       peru: currentAudit.peru,
-      iso: currentAudit.iso
+      iso: currentAudit.iso,
+      templateSampling: currentAudit.templateSampling || null
     };
     const response = await fetch('/api/report', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
     if (!response.ok) throw new Error('No se pudo generar el PDF.');

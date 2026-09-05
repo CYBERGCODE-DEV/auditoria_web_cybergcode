@@ -20,6 +20,10 @@ export default async function handler(req, res) {
       pageSpeed: body.pageSpeed !== false,
       aiReview: body.aiReview === true
     });
+    if (config.maxPages > 50) {
+      return res.status(409).json({ error: 'Las auditorías de más de 50 páginas deben ejecutarse mediante el modo de job por lotes.', code: 'LARGE_AUDIT_JOB_REQUIRED' });
+    }
+
     const cacheKey = makeAuditCacheKey({
       url,
       maxPages: config.maxPages,

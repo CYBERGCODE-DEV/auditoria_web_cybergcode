@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#061427">
   <title>CYBERGCODE Web Audit Intelligence</title>
   <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, seguridad, accesibilidad, ISO, infraestructura y cumplimiento desde una sola URL.">
-  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.10.0" type="image/png">
-  <script src="/js/theme.js?v=0.10.0"></script>
-  <link rel="stylesheet" href="/css/app.css?v=0.10.0">
+  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.12.0" type="image/png">
+  <script src="/js/theme.js?v=0.12.0"></script>
+  <link rel="stylesheet" href="/css/app.css?v=0.12.0">
 </head>
 <body data-view="hero">
   <div class="ambient ambient-a" aria-hidden="true"></div>
@@ -18,13 +18,13 @@
     <div class="app-column">
       <header class="topbar">
         <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
-          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.10.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.10.0" alt=""></span>
+          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.12.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.12.0" alt=""></span>
           <span class="brand-copy"><strong>CYBERG<span>CODE</span></strong><small>WEB AUDIT INTELLIGENCE</small></span>
         </a>
         <div class="top-actions">
           <span class="real-data-badge"><i></i>Datos reales · sin simulación</span>
           <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema"><span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span></button>
-          <div class="version">ENGINE 0.10.0</div>
+          <div class="version">ENGINE 0.12.0</div>
         </div>
       </header>
 
@@ -70,7 +70,7 @@
               </div>
             </div>
             <div class="form-options">
-              <label>Páginas <select id="maxPages" aria-label="Máximo de páginas"><option>5</option><option>12</option><option selected>25</option><option>50</option></select></label>
+              <label>Páginas <select id="maxPages" aria-label="Máximo de páginas"><option>5</option><option>12</option><option selected>25</option><option>50</option><option>100</option><option>250</option><option>500</option></select></label>
               <label class="check"><input id="deviceMobile" type="checkbox" checked> Móvil</label>
               <label class="check"><input id="deviceDesktop" type="checkbox" checked> Escritorio</label>
               <label class="check"><input id="pageSpeed" type="checkbox" checked> PageSpeed / Lighthouse</label>
@@ -78,7 +78,9 @@
               <label class="check"><input id="aiReview" type="checkbox"> Revisión IA opcional</label>
               <span class="secure-label">Seguridad pasiva · SSRF Guard</span>
             </div>
+            <p id="largeAuditHint" class="large-audit-hint" hidden><strong>Auditoría grande:</strong> más de 50 páginas se procesan por lotes persistentes. SEO/HTML se rastrean en todas las páginas procesadas y Chromium usa una muestra representativa de plantillas.</p>
             <p id="stabilityHelp" class="stability-help"><strong>Modo estable:</strong> perfil fijo, rastreo determinista, mediana de PageSpeed cuando se selecciona y caché compartida para reducir variaciones entre dispositivos.</p>
+            <div id="resumeJob" class="resume-job hidden"><div><strong>Auditoría grande pendiente</strong><small id="resumeJobText">Se encontró un job temporal que puede continuar.</small></div><div><button type="button" class="mini-action" id="resumeJobButton">Reanudar</button><button type="button" class="mini-action" id="discardJobButton">Descartar</button></div></div>
           </form>
 
           <div class="scope-grid" aria-label="Cobertura del análisis">
@@ -100,7 +102,7 @@
             <div class="working-wave working-wave-b" aria-hidden="true"></div>
 
             <div class="working-side working-left">
-              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.10.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
+              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.12.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
               <p class="working-kicker">AUDITORÍA EN PROCESO</p>
               <h2>Analizando<br><span id="workingDomain">—</span></h2>
               <p>Extrayendo y analizando datos reales del sitio en el servidor. La interfaz no inventa porcentajes ni resultados intermedios.</p>
@@ -119,14 +121,14 @@
                 <div class="orbit-ring orbit-ring-c"></div>
                 <div class="orbit-scan" aria-hidden="true"></div>
 
-                <div class="orbit-node orbit-n1"><span class="orbit-icon">⌕</span><b>HTTP + SEO</b><small>En proceso</small></div>
-                <div class="orbit-node orbit-n2"><span class="orbit-icon">&lt;/&gt;</span><b>DOM</b><small>En espera</small></div>
-                <div class="orbit-node orbit-n3"><span class="orbit-icon">▧</span><b>Imágenes</b><small>En espera</small></div>
-                <div class="orbit-node orbit-n4"><span class="orbit-icon">A</span><b>Accesibilidad</b><small>Pendiente</small></div>
-                <div class="orbit-node orbit-n5"><span class="orbit-icon">◇</span><b>Seguridad</b><small>Pendiente</small></div>
-                <div class="orbit-node orbit-n6"><span class="orbit-icon">PE</span><b>Perú</b><small>En cola</small></div>
-                <div class="orbit-node orbit-n7"><span class="orbit-icon">ISO</span><b>ISO</b><small>En cola</small></div>
-                <div class="orbit-node orbit-n8"><span class="orbit-icon">PDF</span><b>PDF</b><small>En cola</small></div>
+                <div class="orbit-node orbit-n1 orbit-node-active" data-module="seo"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path><path d="M8.5 11h5"></path></svg></span><b>HTTP + SEO</b><small>En proceso</small></div>
+                <div class="orbit-node orbit-n2" data-module="dom"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 8l-4 4 4 4"></path><path d="M16 8l4 4-4 4"></path><path d="M13.5 5l-3 14"></path></svg></span><b>DOM</b><small>En espera</small></div>
+                <div class="orbit-node orbit-n3" data-module="images"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="12" rx="2"></rect><circle cx="9" cy="10" r="1.5"></circle><path d="M6 16l4.5-4 3.5 3 2.5-2 1.5 1.5"></path></svg></span><b>Imágenes</b><small>En espera</small></div>
+                <div class="orbit-node orbit-n4" data-module="accessibility"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2"></circle><path d="M6 9.5c1.8 1 4 1.5 6 1.5s4.2-.5 6-1.5"></path><path d="M12 11v8"></path><path d="M9 21l3-5 3 5"></path></svg></span><b>Accesibilidad</b><small>Pendiente</small></div>
+                <div class="orbit-node orbit-n5" data-module="security"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-2.7 7.8-7 10-4.3-2.2-7-5.4-7-10V6l7-3z"></path><path d="M9.5 12.5l1.7 1.7 3.3-3.8"></path></svg></span><b>Seguridad</b><small>Pendiente</small></div>
+                <div class="orbit-node orbit-n6" data-module="peru"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4v16"></path><path d="M17 4v16"></path><path d="M7 4h10"></path><path d="M7 20h10"></path></svg></span><b>Perú</b><small>En cola</small></div>
+                <div class="orbit-node orbit-n7" data-module="iso"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.1 4.2 4.6.7-3.3 3.2.8 4.6-4.2-2.2-4.2 2.2.8-4.6L5.3 7.9l4.6-.7L12 3z"></path></svg></span><b>ISO</b><small>En cola</small></div>
+                <div class="orbit-node orbit-n8" data-module="pdf"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 3.5h6l4 4V20a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"></path><path d="M14 3.5V8h4"></path><path d="M9 14h6"></path><path d="M9 17h4"></path></svg></span><b>PDF</b><small>En cola</small></div>
 
                 <div class="working-site-logo" id="workingSiteLogoWrap">
                   <span class="working-site-logo-glow" aria-hidden="true"></span>
@@ -148,7 +150,12 @@
                 <div class="working-step" id="workingStepIdentity"><i></i><span>Detectando identidad visual</span></div>
                 <div class="working-step" id="workingStepAudit"><i></i><span>Analizando estructura, contenido y recursos</span></div>
                 <div class="working-step"><i></i><span>Validando buenas prácticas y seguridad</span></div>
-                <div class="working-step"><i></i><span>Consolidando resultados del informe</span></div>
+                <div class="working-step" id="workingStepConsolidate"><i></i><span>Consolidando resultados del informe</span></div>
+                <div class="job-progress-panel" id="jobProgressPanel" hidden>
+                  <div><strong id="jobProgressPhase">Rastreo por lotes</strong><span id="jobProgressCount">0 / 0 URLs</span></div>
+                  <div class="job-progress-track"><i id="jobProgressBar"></i></div>
+                  <small id="jobProgressDetail">El progreso corresponde a URLs realmente procesadas.</small>
+                </div>
               </section>
 
               <section class="working-process-card identity-card">
@@ -165,7 +172,7 @@
 
             <div class="working-strip">
               <span><i>⚙</i><small>Modo estable</small><b>Activo</b></span>
-              <span><i>▤</i><small>Perfil</small><b>CG-STABLE-2</b></span>
+              <span><i>▤</i><small>Perfil</small><b>CG-STABLE-3</b></span>
               <span><i>▥</i><small>Región lógica</small><b>America/Lima</b></span>
               <span><i>◷</i><small>Cache de análisis</small><b>30 min</b></span>
             </div>
@@ -190,6 +197,7 @@
             <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="content">Contenido</button>
             <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="ux">UX / CRO</button>
             <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="pages">Páginas</button>
+            <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="coverage">Cobertura</button>
             <button class="dashboard-tab core-tab" type="button" role="tab" aria-selected="false" data-tab="images">Imágenes</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="performance">Rendimiento</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="accessibility">Accesibilidad</button>
@@ -199,6 +207,27 @@
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="iso">ISO</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="findings">Observaciones</button>
           </nav>
+
+          <div class="dashboard-nav-mobile" aria-label="Selector móvil de sección">
+            <label for="dashboardTabSelect" class="sr-only">Seleccionar sección del análisis</label>
+            <select id="dashboardTabSelect">
+              <option value="overview">Resumen</option>
+              <option value="seo">SEO</option>
+              <option value="headings">H1–H6</option>
+              <option value="content">Contenido</option>
+              <option value="ux">UX / CRO</option>
+              <option value="pages">Páginas</option>
+              <option value="coverage">Cobertura</option>
+              <option value="images">Imágenes</option>
+              <option value="performance">Rendimiento</option>
+              <option value="accessibility">Accesibilidad</option>
+              <option value="visual">Diseño</option>
+              <option value="infrastructure">Seguridad</option>
+              <option value="peru">Perú</option>
+              <option value="iso">ISO</option>
+              <option value="findings">Observaciones</option>
+            </select>
+          </div>
 
           <section class="analysis-view active" data-view="overview" role="tabpanel">
             <div class="overview-grid">
@@ -258,6 +287,16 @@
 
           <section class="analysis-view" data-view="pages" role="tabpanel" hidden><div class="pages-grid"><article class="panel"><span>MÓDULOS</span><h3>Cobertura real</h3><div id="modules" class="modules"></div></article><article class="panel"><span>PÁGINAS</span><h3>Ficha SEO por URL</h3><p class="legal-note">Abre una página para ver los valores realmente detectados.</p><div id="pagesList" class="pages-list page-details-list"></div></article></div></section>
 
+          <section class="analysis-view" data-view="coverage" role="tabpanel" hidden>
+            <div class="section-intro"><div><span>COBERTURA Y PLANTILLAS</span><h3>Qué parte del sitio se rastreó y cómo se selecciona la muestra técnica</h3></div><p>La agrupación de plantillas es heurística y se identifica como tal; las URLs procesadas y estados HTTP son evidencia real.</p></div>
+            <div class="seo-kpis" id="coverageKpis"></div>
+            <div class="coverage-grid">
+              <article class="panel"><div class="panel-head"><div><span>RASTREO</span><h3>Cobertura del job</h3></div></div><div id="coverageMetrics" class="metric-list"></div></article>
+              <article class="panel"><div class="panel-head"><div><span>MUESTREO TÉCNICO</span><h3>Representantes seleccionados</h3></div></div><div id="representativeSamples" class="representative-list"></div></article>
+            </div>
+            <article class="panel"><div class="panel-head"><div><span>PLANTILLAS OBSERVADAS</span><h3>Agrupación heurística por estructura</h3></div></div><div id="templateGroups" class="template-groups"></div></article>
+          </section>
+
           <section class="analysis-view" data-view="images" role="tabpanel" hidden><div class="section-intro"><div><span>IMÁGENES</span><h3>ALT, peso, formatos, dimensiones y responsive</h3></div><p>Se diferencia entre atributos HTML y datos HTTP realmente inspeccionados.</p></div><div class="image-kpis" id="imageKpis"></div><div class="image-advanced-grid"><article class="panel"><span>TRANSFERENCIA OBSERVADA</span><h3>Resumen de recursos inspeccionados</h3><div id="imageTransfer" class="metric-list"></div></article><article class="panel"><span>FORMATOS</span><h3>Distribución detectada</h3><div id="imageFormats" class="chip-list"></div></article></div><article class="panel"><div class="panel-head"><div><span>MÁS PESADAS</span><h3>Recursos con Content-Length disponible</h3></div></div><div class="table-scroll"><table class="audit-table"><thead><tr><th>Imagen</th><th>Página</th><th>Tipo</th><th>Peso</th><th>HTTP</th></tr></thead><tbody id="largestImagesTable"></tbody></table></div></article><article class="panel"><div class="panel-head"><div><span>INVENTARIO</span><h3>Imágenes encontradas</h3></div></div><div class="table-scroll"><table class="audit-table"><thead><tr><th>Página</th><th>Imagen</th><th>ALT</th><th>Dimensiones</th><th>Loading</th><th>Srcset</th></tr></thead><tbody id="imagesTable"></tbody></table></div></article></section>
 
           <section class="analysis-view" data-view="performance" role="tabpanel" hidden><div class="section-intro"><div><span>RENDIMIENTO</span><h3>Laboratorio, CrUX y Core Web Vitals</h3></div><p>PageSpeed, Chromium y CrUX se presentan como fuentes separadas; una no inventa valores de la otra.</p></div><div class="metrics-grid metrics-grid-4" id="metricsGrid"><article class="panel"><span>PAGESPEED MOBILE</span><h3>Lighthouse · laboratorio</h3><div id="mobileMetrics" class="metric-list"></div></article><article class="panel"><span>PAGESPEED DESKTOP</span><h3>Lighthouse · laboratorio</h3><div id="desktopMetrics" class="metric-list"></div></article><article class="panel"><span>CHROMIUM LAB</span><h3>Fallback medido</h3><div id="browserMetrics" class="metric-list"></div></article><article class="panel"><span>CRUX · USUARIOS REALES</span><h3>Datos de campo</h3><div id="cruxMetrics" class="metric-list"></div></article></div><article class="panel"><div class="panel-head"><div><span>RECURSOS LENTOS</span><h3>Top observado por Chromium</h3></div></div><div id="slowResources" class="resource-list"></div></article></section>
@@ -296,6 +335,6 @@
       <footer><span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span><span>cybergcode.com · Lambayeque, Perú</span></footer>
     </div>
   </div>
-  <script type="module" src="/js/app.js?v=0.10.0"></script>
+  <script type="module" src="/js/app.js?v=0.12.0"></script>
 </body>
 </html>

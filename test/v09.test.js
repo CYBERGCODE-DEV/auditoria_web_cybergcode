@@ -11,7 +11,7 @@ const js = fs.readFileSync(new URL('../public/js/app.js', import.meta.url), 'utf
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 test('V0.9+ expone UX/CRO, CrUX y revisión IA opcional', () => {
-  assert.equal(pkg.version, '0.10.0');
+  assert.equal(pkg.version, '0.12.0');
   assert.match(html, /data-tab="ux"/);
   assert.match(html, /id="cruxMetrics"/);
   assert.match(html, /id="aiReview"/);

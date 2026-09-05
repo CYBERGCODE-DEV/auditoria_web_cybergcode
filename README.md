@@ -1,49 +1,193 @@
-# CYBERGCODE Web Audit Intelligence v0.10.0
+# CYBERGCODE Web Audit Intelligence v0.12.0
 
-Plataforma de auditoría web integral para Vercel. Frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
+Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
 
 ## Principio de integridad
 
-**Datos medidos, no simulaciones.** Un módulo no seleccionado o sin fuente real no recibe una puntuación ficticia. Las heurísticas UX/CRO, cobertura CSS observable y sugerencias IA se identifican expresamente como tales.
+**Datos medidos, no simulaciones.** Un módulo no ejecutado, una fuente externa sin respuesta o una comprobación manual pendiente no reciben una puntuación inventada. Las heurísticas de UX/CRO, agrupación de plantillas, cobertura CSS e IA se identifican expresamente como tales.
 
-## Novedades V0.10.0
+## Novedad principal V0.11: auditorías grandes de 100–500 páginas
 
-- Modos **Rápida / Completa / Personalizada**.
-- La auditoría personalizada permite seleccionar SEO, H1-H6, contenido, imágenes, rendimiento, CrUX, accesibilidad, UX/CRO, diseño/CSS, seguridad, infraestructura, Perú e ISO.
-- Selector independiente **Móvil / Escritorio** para fuentes y capturas que dependen de dispositivo.
-- La configuración completa forma parte de la huella de caché estable; dos auditorías con módulos o dispositivos distintos no reutilizan resultados incompatibles.
-- Tabs del dashboard se ocultan cuando el usuario no seleccionó su módulo.
-- Auditoría CSS observable mediante CSSOM + `getComputedStyle()`:
-  - hojas accesibles/inaccesibles;
-  - selectores estáticos evaluados;
-  - proporción de selectores sin coincidencia en la vista actual;
-  - estilos inline;
-  - custom properties;
-  - familias, tamaños y pesos tipográficos;
-  - spacing y border-radius observados;
-  - presencia observable de `:hover`, `:focus`, `:focus-visible`, `:disabled` y `:checked`.
-- Nuevas remediaciones `CSS-*` y revisión de foco.
-- Nuevo módulo **Accesibilidad** con resultados automáticos y checklist humano guiado para teclado, foco, lector de pantalla, zoom/reflow, multimedia, errores, movimiento y significado.
-- El checklist manual se guarda localmente por auditoría y se incorpora al PDF; marcarlo como revisado no equivale a certificación WCAG.
-- PageSpeed soporta selección de dispositivo y conserva resultados válidos si solo uno de los dispositivos responde.
-- CrUX respeta los dispositivos seleccionados.
-- Plan de acción incorpora matriz visual de impacto/severidad frente a esfuerzo declarado.
-- PDF ampliado con configuración de auditoría, CSS observable y revisión manual de accesibilidad.
-- Perfil estable actualizado a `CG-STABLE-2`.
+Hasta 50 páginas se mantiene la ejecución directa existente. Cuando el usuario solicita **más de 50 páginas**, la interfaz crea un **job temporal por lotes** en vez de intentar procesar cientos de URLs dentro de una única Function.
 
-## Modos
+### Flujo real
 
-### Rápida
+```text
+Dominio
+  ↓
+robots.txt + sitemap + enlaces internos
+  ↓
+Job temporal
+  ↓
+lotes de 20 URLs
+  ↓
+HTTP / HTML / SEO / H1-H6 / links / imágenes / contenido
+  ↓
+chunks comprimidos en Vercel Runtime Cache
+  ↓
+agrupación heurística por plantillas
+  ↓
+representantes de plantillas
+  ↓
+Chromium adicional sobre muestra limitada
+  ↓
+consolidación del mismo JSON
+  ↓
+Dashboard + PDF
+```
 
-Pensada para diagnóstico inicial de bajo coste. Incluye HTTP/HTML, SEO, H1-H6, contenido determinístico, imágenes básicas, UX observable y seguridad pasiva. Omite Chromium, Lighthouse/CrUX, ISO y cumplimiento para reducir tiempo.
+El navegador del usuario avanza el job llamando a un lote por petición. El estado queda temporalmente almacenado y puede **reanudarse tras recargar la página** durante su TTL. Esto evita presentar el sistema como una cola autónoma cuando todavía no existe un worker/Workflow independiente.
 
-### Completa
+## Persistencia temporal del job
 
-Ejecuta todos los módulos automáticos disponibles. PageSpeed, CrUX e IA siguen dependiendo de sus respectivas fuentes/configuración.
+La V0.11 utiliza **Vercel Runtime Cache** cuando se ejecuta en Vercel y un fallback de memoria únicamente para desarrollo/pruebas locales.
 
-### Personalizada
+- TTL del job: **2 horas**.
+- Estado, lotes y resultado se almacenan por claves independientes.
+- Los lotes se comprimen con gzip/base64.
+- Un chunk demasiado grande se divide automáticamente en varias partes para mantenerse por debajo de un margen seguro respecto al límite de tamaño por entrada del Runtime Cache.
+- Si una única página produce un detalle extraordinariamente grande, el almacenamiento temporal limita arrays muy extensos y lo declara mediante `jobStorage.truncated=true`; no se inventan datos faltantes.
+- La V0.11 no sustituye una base de datos/cola durable para ejecuciones de larga vida. Eso queda para la fase plataforma.
 
-Solo presenta y puntúa los módulos seleccionados. Chromium se activa internamente cuando es dependencia necesaria de Rendimiento, Accesibilidad o Diseño, sin convertir por ello módulos no seleccionados en puntuaciones.
+## Reanudación y cancelación
+
+La interfaz guarda solo una referencia local al job activo:
+
+```text
+cybergcode:active-large-job
+```
+
+Al volver a abrir la aplicación puede consultar `/api/jobs/status` y:
+
+- reanudar el rastreo;
+- abrir el resultado si ya fue consolidado;
+- descartar/cancelar el job temporal.
+
+La cancelación marca el job como `cancelled`; no convierte páginas pendientes en páginas procesadas.
+
+## Progreso real
+
+Para auditorías grandes la pantalla de carga muestra:
+
+- URLs realmente procesadas;
+- páginas HTML procesadas correctamente;
+- fallos reales;
+- URLs descubiertas;
+- URLs todavía en cola;
+- lotes persistidos;
+- fase `crawling / crawl-complete / finalizing / completed`.
+
+Si la cola se agota antes del límite solicitado, la interfaz muestra por ejemplo:
+
+```text
+31 URLs procesadas · cola agotada antes del límite 500
+```
+
+en lugar de fingir `500/500`.
+
+## Agrupación por plantillas
+
+Después del rastreo se agrupan páginas mediante señales observables:
+
+- patrón de URL;
+- estructura de encabezados;
+- datos estructurados.
+
+Ejemplos de grupos:
+
+```text
+Home
+Producto
+Categoría
+Artículo
+Contacto
+Checkout / comercio
+Cuenta
+Sección
+Profundidad N
+```
+
+La clasificación se muestra como **heurística**, no como una verdad del CMS.
+
+El dashboard incluye una pestaña **Cobertura** con:
+
+- URLs solicitadas/procesadas/exitosas/fallidas;
+- grupos de plantillas;
+- porcentaje de cobertura;
+- URL representativa por grupo;
+- muestras Chromium realmente ejecutadas.
+
+## Rendimiento representativo
+
+No se ejecuta Lighthouse/PageSpeed indiscriminadamente sobre 500 páginas. La URL objetivo conserva las fuentes configuradas del análisis principal y, cuando Chromium está habilitado, V0.11 puede ejecutar una muestra adicional de hasta **3 representantes no-home** para aportar señales de laboratorio como TTFB/LCP/DOM/recursos.
+
+Ese muestreo:
+
+- no sustituye el score principal;
+- no inventa una puntuación PageSpeed por plantilla;
+- se etiqueta como muestreo representativo.
+
+## Detalle por página bajo demanda
+
+Para evitar un JSON gigante al navegador, el resultado principal de una auditoría grande contiene una versión compacta de las páginas. La ficha completa se recupera cuando el usuario la abre mediante:
+
+```text
+GET /api/jobs/page?id=JOB-...&url=https://...
+```
+
+Los conteos y agregados se calculan antes de compactar el payload final.
+
+## Endpoints de jobs
+
+```text
+POST /api/jobs/start
+POST /api/jobs/process
+POST /api/jobs/finalize
+POST /api/jobs/cancel
+GET  /api/jobs/status?id=...
+GET  /api/jobs/result?id=...
+GET  /api/jobs/page?id=...&url=...
+```
+
+La Function directa:
+
+```text
+POST /api/audit
+```
+
+rechaza deliberadamente solicitudes de más de 50 páginas con `LARGE_AUDIT_JOB_REQUIRED`; el frontend las deriva al flujo por jobs.
+
+## Funciones ya disponibles
+
+Además del crawler grande, V0.11 conserva lo construido hasta V0.10:
+
+- Rápida / Completa / Personalizada;
+- selección real de módulos;
+- Móvil / Escritorio;
+- SSRF Guard;
+- crawler determinístico;
+- HTTP/HTTPS;
+- SEO técnico y on-page;
+- H1–H6;
+- contenido determinístico;
+- IA editorial opcional y separada del score técnico;
+- imágenes y recursos;
+- Chromium / raw HTML vs DOM renderizado;
+- PageSpeed/Lighthouse cuando la fuente responde;
+- Browser Lab medido como fallback diferenciado;
+- CrUX/CrUX History cuando existe muestra;
+- axe-core;
+- WCAG automático + checklist manual;
+- UX/CRO heurístico basado en evidencia;
+- CSSOM / estilos computados / colores / tipografías / contraste;
+- responsive y screenshots;
+- seguridad HTTP, cookies, terceros;
+- DNS/TLS/SPF/DMARC/DKIM orientativo/MTA-STS/TLS-RPT;
+- Perú;
+- ISO Web Readiness + Evidence Center;
+- motor de remediación y criterio de cierre;
+- plan de acción Impacto × Esfuerzo;
+- dashboard y PDF corporativo sobre el mismo JSON.
 
 ## Variables de entorno
 
@@ -56,6 +200,8 @@ CHROME_EXECUTABLE_PATH=
 CHROMIUM_PACK_URL=
 ```
 
+Las claves externas son opcionales. Si una fuente no está configurada o no responde, el informe lo declara y no genera datos sustitutos.
+
 ## Desarrollo
 
 ```bash
@@ -65,70 +211,38 @@ npm run check
 npx vercel dev
 ```
 
-## Endpoint principal
+## Despliegue GitHub → Vercel
 
-`POST /api/audit`
+1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
+2. Hacer push a la rama conectada a Vercel.
+3. Confirmar **ENGINE 0.12.0** y perfil **CG-STABLE-3**.
+4. Probar primero 12–25 páginas.
+5. Probar después 100 páginas y verificar el panel de progreso por lotes.
+6. Recargar durante un job y confirmar que aparece **Reanudar**.
+7. Abrir la pestaña **Cobertura** y comprobar los grupos/representantes.
+8. Confirmar que una auditoría >50 páginas usa `/api/jobs/*` y no `/api/audit` directamente.
 
-Ejemplo personalizado:
+## Límites deliberados de V0.11
 
-```json
-{
-  "url": "https://example.com",
-  "auditMode": "custom",
-  "maxPages": 25,
-  "stableMode": true,
-  "pageSpeed": true,
-  "aiReview": false,
-  "devices": {
-    "mobile": true,
-    "desktop": false
-  },
-  "modules": {
-    "seo": true,
-    "headings": true,
-    "content": true,
-    "images": true,
-    "performance": true,
-    "crux": true,
-    "accessibility": true,
-    "ux": true,
-    "visual": true,
-    "security": true,
-    "infrastructure": true,
-    "compliance": false,
-    "iso": false
-  }
-}
-```
+- La persistencia de jobs es temporal, no una base de datos histórica.
+- El procesamiento avanza mientras un cliente reanuda/impulsa los lotes; todavía no es una cola autónoma en background.
+- Los grupos de plantillas son heurísticos.
+- Chromium representativo usa una muestra pequeña para controlar coste/tiempo.
+- PageSpeed no se ejecuta automáticamente sobre cada plantilla.
+- El detalle extremadamente grande de una página puede compactarse para almacenamiento temporal y queda marcado como tal.
 
-## Interpretación de CSS
+## Próximo paso para V1.0
 
-La métrica de selectores sin coincidencia **no equivale automáticamente a CSS sin usar**. Solo evalúa selectores estáticos en hojas accesibles por CSSOM sobre la vista renderizada. Estados dinámicos, rutas distintas, componentes diferidos y hojas cross-origin pueden justificar reglas no coincidentes. Cualquier eliminación requiere validación por plantillas.
+La base del plan inicial queda prácticamente cerrada. Antes de declarar V1.0 conviene realizar:
 
-## Accesibilidad
+- validación end-to-end real en el deployment Vercel con una auditoría de 100/250/500 páginas;
+- reintentos/cancelación/errores de jobs validados con tráfico real;
+- pulido final del PDF y cobertura multi-plantilla;
+- decisión de si V1.0 mantendrá el job client-driven o utilizará Vercel Workflows/Queues para ejecución autónoma.
 
-axe-core, contraste, responsive y targets táctiles son comprobaciones automáticas parciales. La sección manual guía pruebas que no deben declararse aprobadas automáticamente: teclado, foco, lector de pantalla, zoom/reflow, multimedia, formularios, movimiento y significado.
+## Fase plataforma posterior
 
-## Despliegue GitHub -> Vercel
-
-1. `package.json`, `vercel.json`, `api/`, `lib/` y `public/` deben quedar en la raíz.
-2. Configurar solo las variables de entorno que se vayan a utilizar.
-3. Hacer push a la rama conectada a Vercel.
-4. Confirmar en producción `ENGINE 0.10.0`.
-5. Probar Rápida, Completa y Personalizada.
-6. Confirmar que tabs no seleccionados desaparezcan y que sus categorías no reciban score.
-7. Verificar PageSpeed/CrUX/IA como fuentes opcionales y explícitas.
-
-## Pendiente para cerrar V1.0
-
-- Crawler grande de **100-500 páginas mediante jobs/cola persistente**. No se fuerza dentro de una única Function Vercel de 300 s.
-- Cobertura CSS multi-plantilla para reducir incertidumbre de selectores dinámicos/no visitados.
-- Flujo de revisión manual con almacenamiento persistente y adjuntos de evidencia (actualmente local en navegador).
-- Pulido final del PDF/plan de acción y validación end-to-end en Vercel con las APIs externas configuradas.
-
-## Fase plataforma posterior a V1.0
-
-Usuarios, clientes, proyectos, PostgreSQL, históricos, comparativas antes/después, auditorías programadas, monitorización/alertas, evidencias ISO persistentes, API, white-label, Search Console, Analytics y pruebas activas de seguridad únicamente con autorización.
+Usuarios, clientes, proyectos, PostgreSQL, histórico, comparación antes/después, auditorías programadas, monitorización/alertas, almacenamiento permanente de evidencias ISO, API pública, white-label, Search Console, Analytics y pruebas de seguridad activas únicamente con autorización.
 
 ## Empresa
 

@@ -11,6 +11,27 @@
     },
     "api/identity.js": {
       "maxDuration": 30
+    },
+    "api/jobs/start.js": {
+      "maxDuration": 60
+    },
+    "api/jobs/process.js": {
+      "maxDuration": 120
+    },
+    "api/jobs/finalize.js": {
+      "maxDuration": 300
+    },
+    "api/jobs/status.js": {
+      "maxDuration": 30
+    },
+    "api/jobs/result.js": {
+      "maxDuration": 60
+    },
+    "api/jobs/page.js": {
+      "maxDuration": 60
+    },
+    "api/jobs/cancel.js": {
+      "maxDuration": 30
     }
   },
   "headers": [

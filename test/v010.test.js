@@ -12,7 +12,7 @@ const css = fs.readFileSync(new URL('../public/css/app.css', import.meta.url), '
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 test('V0.10.0 incorpora modos Rápida, Completa y Personalizada', () => {
-  assert.equal(pkg.version, '0.10.0');
+  assert.equal(pkg.version, '0.12.0');
   assert.match(html, /value="quick"/);
   assert.match(html, /value="complete"/);
   assert.match(html, /value="custom"/);
@@ -40,7 +40,7 @@ test('modo rápido omite módulos costosos y modo personalizado respeta selecci�
 });
 
 test('configuración de auditoría forma parte de la huella de caché', () => {
-  const base = { url:'https://example.com', maxPages:12, stableMode:true, engineVersion:'0.10.0' };
+  const base = { url:'https://example.com', maxPages:12, stableMode:true, engineVersion:'0.12.0' };
   const quick = makeAuditCacheKey({ ...base, auditMode:'quick', modules:{seo:true}, devices:{mobile:true,desktop:false} });
   const complete = makeAuditCacheKey({ ...base, auditMode:'complete', modules:{seo:true}, devices:{mobile:true,desktop:false} });
   assert.notEqual(quick, complete);

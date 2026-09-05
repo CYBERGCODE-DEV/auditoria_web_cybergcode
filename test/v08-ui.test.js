@@ -9,8 +9,8 @@ const engine = fs.readFileSync(new URL('../lib/audit/engine.js', import.meta.url
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
  test('base v0.8+ conserva branding transparente y dashboard sin sidebar', () => {
-  assert.equal(pkg.version, '0.10.0');
-  assert.match(html, /cybergcode-symbol\.png\?v=0\.10\.0/);
+  assert.equal(pkg.version, '0.12.0');
+  assert.match(html, /cybergcode-symbol\.png\?v=0\.12\.0/);
   assert.match(html, /brand-copy/);
   assert.doesNotMatch(html, /id="appSidebar"/);
   assert.match(css, /Sidebar removed in 0\.8\.2/);
@@ -44,7 +44,7 @@ test('motor declara política measured-only sin simulación', () => {
 });
 
 
-test('loader 0.8.2 replica la composición profesional acordada sin datos ficticios', () => {
+test('loader responsivo conserva la composición profesional acordada sin datos ficticios', () => {
   assert.match(html, /working-brand-lockup/);
   assert.match(html, /id="workingElapsed"/);
   assert.match(html, /orbit-n8/);
@@ -57,14 +57,14 @@ test('loader 0.8.2 replica la composición profesional acordada sin datos fictic
 });
 
 test('branding usa símbolo + lockup CSS sin fondo blanco y cache-busting actual', () => {
-  assert.match(html, /cybergcode-symbol\.png\?v=0\.10\.0/);
+  assert.match(html, /cybergcode-symbol\.png\?v=0\.12\.0/);
   assert.match(html, /brand-copy/);
-  assert.match(html, /ENGINE 0\.10\.0/);
+  assert.match(html, /ENGINE 0\.12\.0/);
   assert.match(css, /background:transparent!important/);
 });
 
 test('tema oscuro dispone de símbolo dedicado y loader móvil compacto', () => {
-  assert.match(html, /cybergcode-symbol-dark\.png\?v=0\.10\.0/);
+  assert.match(html, /cybergcode-symbol-dark\.png\?v=0\.12\.0/);
   assert.match(css, /html\[data-theme="dark"\] \.brand-symbol-dark\{display:block!important\}/);
   assert.match(css, /@media\(max-width:42rem\)/);
   assert.match(css, /\.working-orbit\{width:min\(22rem,94vw\)\}/);
@@ -75,5 +75,7 @@ test('base visual conserva contenido e inventario avanzado de imágenes', () => 
   assert.match(html, /id="contentKpis"/);
   assert.match(html, /id="largestImagesTable"/);
   assert.match(html, /id="technologyList"/);
+  assert.match(html, /id="dashboardTabSelect"/);
   assert.match(js, /function renderContent\(/);
+  assert.match(js, /syncResponsiveTableLabels/);
 });
