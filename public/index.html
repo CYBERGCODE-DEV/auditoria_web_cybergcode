@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#061427">
   <title>CYBERGCODE Web Audit Intelligence</title>
   <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, seguridad, accesibilidad, ISO, infraestructura y cumplimiento desde una sola URL.">
-  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.13.2" type="image/png">
-  <script src="/js/theme.js?v=0.13.2"></script>
-  <link rel="stylesheet" href="/css/app.css?v=0.13.2">
+  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.15.0" type="image/png">
+  <script src="/js/theme.js?v=0.15.0"></script>
+  <link rel="stylesheet" href="/css/app.css?v=0.15.0">
 </head>
 <body data-view="hero">
   <div class="ambient ambient-a" aria-hidden="true"></div>
@@ -18,13 +18,14 @@
     <div class="app-column">
       <header class="topbar">
         <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
-          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.13.2" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.13.2" alt=""></span>
+          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.15.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.15.0" alt=""></span>
           <span class="brand-copy"><strong>CYBERG<span>CODE</span></strong><small>WEB AUDIT INTELLIGENCE</small></span>
         </a>
         <div class="top-actions">
           <span class="real-data-badge"><i></i>Datos reales · sin simulación</span>
+          <span id="platformDbBadge" class="platform-db-badge" title="Estado de persistencia"><i></i><span>Histórico</span></span>
           <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema"><span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span></button>
-          <div class="version">ENGINE 0.13.2</div>
+          <div class="version">ENGINE 0.15.0</div>
         </div>
       </header>
 
@@ -102,7 +103,7 @@
             <div class="working-wave working-wave-b" aria-hidden="true"></div>
 
             <div class="working-side working-left">
-              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.13.2" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
+              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.15.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
               <p class="working-kicker">AUDITORÍA EN PROCESO</p>
               <h2>Analizando<br><span id="workingDomain">—</span></h2>
               <p>Extrayendo y analizando datos reales del sitio en el servidor. La interfaz no inventa porcentajes ni resultados intermedios.</p>
@@ -172,7 +173,7 @@
 
             <div class="working-strip">
               <span><i>⚙</i><small>Modo estable</small><b>Activo</b></span>
-              <span><i>▤</i><small>Perfil</small><b>CG-STABLE-3</b></span>
+              <span><i>▤</i><small>Perfil</small><b>CG-STABLE-5</b></span>
               <span><i>▥</i><small>Región lógica</small><b>America/Lima</b></span>
               <span><i>◷</i><small>Cache de análisis</small><b>30 min</b></span>
             </div>
@@ -206,6 +207,9 @@
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="peru">Perú</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="iso">ISO</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="findings">Observaciones</button>
+            <button class="dashboard-tab platform-tab" type="button" role="tab" aria-selected="false" data-tab="project">Proyecto</button>
+            <button class="dashboard-tab platform-tab" type="button" role="tab" aria-selected="false" data-tab="history">Historial</button>
+            <button class="dashboard-tab platform-tab" type="button" role="tab" aria-selected="false" data-tab="compare">Comparar</button>
           </nav>
 
           <div class="dashboard-nav-mobile" aria-label="Selector móvil de sección">
@@ -226,6 +230,9 @@
               <option value="peru">Perú</option>
               <option value="iso">ISO</option>
               <option value="findings">Observaciones</option>
+              <option value="project">Proyecto</option>
+              <option value="history">Historial</option>
+              <option value="compare">Comparar</option>
             </select>
           </div>
 
@@ -327,6 +334,30 @@
             <article class="panel"><div class="panel-head"><div><span>MATRIZ IMPACTO / ESFUERZO</span><h3>Priorización visual de las observaciones devueltas</h3></div></div><div id="actionMatrix" class="action-matrix"></div></article>
             <article class="panel findings-panel"><div class="panel-head"><div><span>OBSERVACIONES</span><h3>Prioridades, solución y criterio de cierre</h3></div><select id="severityFilter"><option value="all">Todos</option><option value="critical">Críticos</option><option value="high">Altos</option><option value="medium">Medios</option><option value="low">Bajos</option></select></div><p class="findings-help">Cada observación incluye evidencia, recomendación, solución, pasos y criterio de cierre.</p><div id="findingsList" class="findings-list"></div></article>
           </section>
+
+          <section class="analysis-view" data-view="project" role="tabpanel" hidden>
+            <div class="section-intro"><div><span>PROYECTO</span><h3>Proyecto persistente del dominio auditado</h3></div><p>Las auditorías se agrupan automáticamente por dominio cuando PostgreSQL está configurado.</p></div>
+            <div class="platform-grid">
+              <article class="panel"><div class="panel-head"><div><span>ESTADO DE PLATAFORMA</span><h3>Persistencia PostgreSQL</h3></div><span class="status-pill" id="platformStatusPill">Comprobando</span></div><div id="platformStatusMetrics" class="metric-list"></div><form id="platformAccessForm" class="platform-access-form"><label>Clave administrativa<input id="platformAccessKey" type="password" autocomplete="current-password" placeholder="CYBERGCODE_PLATFORM_KEY"></label><button type="submit" class="mini-action">Desbloquear histórico</button><small>La clave se conserva únicamente en esta pestaña del navegador mediante sessionStorage.</small></form></article>
+              <article class="panel"><div class="panel-head"><div><span>PROYECTO ACTUAL</span><h3 id="currentProjectName">Sin proyecto persistente</h3></div></div><div id="currentProjectMetrics" class="metric-list"></div><form id="projectEditForm" class="project-edit-form"><label>Nombre<input id="projectNameInput" maxlength="160" placeholder="Nombre del proyecto"></label><label>Descripción<textarea id="projectDescriptionInput" rows="3" maxlength="500" placeholder="Notas internas del proyecto"></textarea></label><button type="submit" class="mini-action">Guardar proyecto</button></form></article>
+            </div>
+            <article class="panel"><div class="panel-head"><div><span>PROYECTOS</span><h3>Dominios con histórico persistente</h3></div><button id="refreshProjects" class="mini-action" type="button">Actualizar</button></div><div id="projectList" class="project-list"></div></article>
+          </section>
+
+          <section class="analysis-view" data-view="history" role="tabpanel" hidden>
+            <div class="section-intro"><div><span>HISTORIAL</span><h3>Evolución real de auditorías guardadas</h3></div><p>Cada fila corresponde a una ejecución completada y persistida; no se generan registros ficticios.</p></div>
+            <article class="panel"><div class="panel-head"><div><span>SELECCIÓN</span><h3>Histórico por proyecto</h3></div><select id="historyProjectSelect" aria-label="Proyecto del historial"></select></div><div id="historySummary" class="history-summary"></div><div id="historyList" class="history-list"></div></article>
+          </section>
+
+          <section class="analysis-view" data-view="compare" role="tabpanel" hidden>
+            <div class="section-intro"><div><span>ANTES VS DESPUÉS</span><h3>Comparación de dos auditorías del mismo proyecto</h3></div><p>Los deltas se calculan únicamente sobre métricas presentes en ambas ejecuciones.</p></div>
+            <article class="panel comparison-controls"><div class="comparison-selectors"><label>Antes<select id="compareBefore"></select></label><label>Después<select id="compareAfter"></select></label><button id="runComparison" type="button">Comparar auditorías</button></div><p id="comparisonHint" class="muted">Selecciona dos auditorías del mismo proyecto.</p></article>
+            <div id="comparisonResult" class="comparison-result hidden">
+              <div class="comparison-kpis" id="comparisonKpis"></div>
+              <div class="content-grid"><article class="panel"><span>PUNTUACIONES</span><h3>Cambio por categoría</h3><div id="comparisonScores" class="comparison-list"></div></article><article class="panel"><span>OBSERVACIONES</span><h3>Reducción o aumento de incidencias</h3><div id="comparisonFindings" class="comparison-list"></div></article></div>
+              <div class="content-grid"><article class="panel"><span>SEO</span><h3>Problemas técnicos comparables</h3><div id="comparisonSeo" class="comparison-list"></div></article><article class="panel"><span>RENDIMIENTO</span><h3>Mobile / Desktop cuando existe evidencia común</h3><div id="comparisonPerformance" class="comparison-list"></div></article></div>
+            </div>
+          </section>
         </section>
 
         <section class="error-box hidden" id="errorBox" role="alert"><strong>No se pudo completar la auditoría</strong><p id="errorText"></p><button id="retryButton" class="ghost">Volver</button></section>
@@ -335,6 +366,6 @@
       <footer><span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span><span>cybergcode.com · Lambayeque, Perú</span></footer>
     </div>
   </div>
-  <script type="module" src="/js/app.js?v=0.13.2"></script>
+  <script type="module" src="/js/app.js?v=0.15.0"></script>
 </body>
 </html>

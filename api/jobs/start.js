@@ -1,4 +1,5 @@
-import { createLargeAuditJob } from '../../lib/jobs/large-audit.js';
+import { createLargeAuditJob, getLargeAuditJobStatus } from '../../lib/jobs/large-audit.js';
+import { enqueueLargeAuditStep } from '../../lib/jobs/queue-orchestrator.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -15,7 +16,9 @@ export default async function handler(req, res) {
       stableMode: body.stableMode !== false,
       aiReview: body.aiReview === true
     });
-    return res.status(202).json({ job });
+    const orchestration = await enqueueLargeAuditStep(job.id, 'process');
+    const current = await getLargeAuditJobStatus(job.id);
+    return res.status(202).json({ job: current || job, orchestration });
   } catch (error) {
     console.error('[jobs/start]', error);
     return res.status(400).json({ error: error?.message || 'No se pudo iniciar el job.' });

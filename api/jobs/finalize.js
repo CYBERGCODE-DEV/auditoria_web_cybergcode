@@ -1,4 +1,4 @@
-import { finalizeLargeAuditJob } from '../../lib/jobs/large-audit.js';
+import { finalizeLargeAuditJob, getLargeAuditJobStatus } from '../../lib/jobs/large-audit.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -10,6 +10,8 @@ export default async function handler(req, res) {
     return res.status(200).json(payload);
   } catch (error) {
     console.error('[jobs/finalize]', error);
-    return res.status(400).json({ error: error?.message || 'No se pudo consolidar la auditoría.' });
+    const id = typeof req.body === 'string' ? null : req.body?.id;
+    const job = error?.job || (id ? await getLargeAuditJobStatus(id).catch(()=>null) : null);
+    return res.status(error?.retryable ? 503 : 400).json({ error: error?.message || 'No se pudo consolidar la auditoría.', retryable:Boolean(error?.retryable), job });
   }
 }

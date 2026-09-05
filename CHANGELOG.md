@@ -1,4 +1,31 @@
-## v0.13.2 — paquete Production sin tests
+# Changelog
+
+## v0.15.0 — proyectos, PostgreSQL, histórico y antes/después
+
+- Persistencia opcional mediante PostgreSQL serverless (`DATABASE_URL`) compatible con Neon/Vercel.
+- Creación automática de un **Proyecto por dominio** al completar una auditoría.
+- Historial persistente de auditorías con score, páginas, hallazgos, modo y snapshots normalizados.
+- Comparación **Antes vs Después** para puntuación global/categorías, severidades, SEO y métricas de rendimiento disponibles en ambas ejecuciones.
+- Nuevo dashboard: `Proyecto`, `Historial` y `Comparar`.
+- API de plataforma: `/api/platform-status`, `/api/projects`, `/api/project`, `/api/history`, `/api/audit-record` y `/api/comparison`.
+- Snapshot histórico separado del resultado completo para que las comparativas sigan siendo ligeras y verificables.
+- El resultado completo se guarda en JSONB únicamente cuando no supera el umbral seguro definido; el snapshot y resumen se conservan siempre.
+- El motor sigue funcionando sin base de datos: la interfaz declara explícitamente que el histórico persistente está desactivado.
+- Perfil reproducible actualizado a `CG-STABLE-5` y motor `0.15.0`.
+- Distribución Production: sin suites de pruebas.
+
+## v0.14.0 — jobs autónomos, recuperación y cobertura multi-plantilla
+
+- Auditorías de más de 50 páginas intentan ejecutarse mediante **Vercel Queues** con topic `cybergcode-large-audit`.
+- Consumer privado con trigger `queue/v2beta`; el navegador puede cerrarse mientras la cola continúa procesando.
+- Fallback automático al procesamiento client-driven si Queues no está disponible.
+- Reintentos controlados para lotes y consolidación, con estado y trazabilidad real del job.
+- TTL temporal de jobs ampliado a 12 horas.
+- El PDF informa orquestación, reintentos, grupos de plantillas y métricas Chromium representativas.
+- Perfil reproducible actualizado a `CG-STABLE-4`.
+- Distribución Production sin carpeta de tests.
+
+## v0.14.0 — paquete Production sin tests
 
 - Eliminada completamente la carpeta `test/`.
 - Eliminados todos los archivos `*.test.js` del paquete distribuible.
@@ -6,14 +33,14 @@
 - Se conserva `npm run check` para validación sintáctica del código de producción.
 - No se modificó la lógica funcional del motor de auditoría respecto de la versión responsive anterior.
 
-## v0.13.2 — limpieza de pruebas y paquete de entrega
+## v0.14.0 — limpieza de pruebas y paquete de entrega
 
 - Eliminadas pruebas temporales/legacy con nombres de versión (`v08`, `v09`, `v010`, `v011`, `v012`, `v013`) que ya duplicaban validaciones.
 - La cobertura útil se reorganizó en pruebas por funcionalidad: `responsive-ui`, `performance-ux`, `audit-modes-css` y `large-audit-jobs`.
 - Se redujo la dependencia de asserts ligados a versiones históricas y se dejó una única verificación de integridad de release.
 - El proyecto funcional permanece completo: motor de auditoría, interfaz, endpoints Vercel, jobs, PDF, identidad visual y módulos de análisis.
 
-## v0.13.2 — hardening responsive real en tablet y móvil
+## v0.14.0 — hardening responsive real en tablet y móvil
 
 - **Loader / auditoría en proceso** reorganizado para **tablet**: el layout se apila antes, el radar central reduce tamaño, el dominio rompe línea sin desbordes y los paneles laterales se convierten en grilla adaptable.
 - **Dashboard** optimizado para pantallas intermedias: navegación compacta antes en tablet, paneles principales en una sola columna y botones de acción fluidos.
@@ -23,14 +50,14 @@
 
 # Changelog
 
-## v0.13.2 — responsive system, loader adaptativo y navegación móvil
+## v0.14.0 — responsive system, loader adaptativo y navegación móvil
 
 - Loader de auditoría rediseñado para **móvil, tablet y desktop** con composición fluida, escalado progresivo y distribución apilada en pantallas estrechas.
 - Los **8 nodos orbitales** ahora usan iconografía SVG representativa (SEO, DOM, Imágenes, Accesibilidad, Seguridad, Perú, ISO y PDF) y animaciones sutiles de flotación/brillo para reforzar la sensación interactiva.
 - Nuevo **selector móvil de secciones** para el dashboard (`dashboardTabSelect`) que complementa la barra horizontal de pestañas y evita desbordes en pantallas pequeñas.
 - Tablas del análisis adaptadas a formato **stacked cards** en móvil, preservando todas las métricas sin desbordes laterales.
 - Ajustes responsivos globales en textos, KPIs, paneles, grids, botones, gráficas e imágenes para mejorar la lectura en cualquier dispositivo.
-- Todos los assets públicos y el motor visual se actualizan a **ENGINE 0.13.2**.
+- Todos los assets públicos y el motor visual se actualizan a **ENGINE 0.14.0**.
 
 # CHANGELOG
 
@@ -54,7 +81,7 @@
 - Muestreo Chromium adicional sobre hasta 3 plantillas no-home cuando el navegador está habilitado.
 - El muestreo representativo no altera ni inventa el score PageSpeed principal.
 - PDF ampliado con cobertura del crawler, grupos de plantillas y muestras representativas.
-- Perfil estable actualizado a `CG-STABLE-3`.
+- Perfil estable actualizado a `CG-STABLE-4`.
 - ENGINE `0.11.0`.
 - Política measured-only preservada.
 

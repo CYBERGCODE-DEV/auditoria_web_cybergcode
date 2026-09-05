@@ -32,6 +32,35 @@
     },
     "api/jobs/cancel.js": {
       "maxDuration": 30
+    },
+    "api/queues/large-audit.js": {
+      "maxDuration": 300,
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "cybergcode-large-audit",
+          "retryAfterSeconds": 45,
+          "initialDelaySeconds": 0
+        }
+      ]
+    },
+    "api/platform-status.js": {
+      "maxDuration": 30
+    },
+    "api/projects.js": {
+      "maxDuration": 30
+    },
+    "api/project.js": {
+      "maxDuration": 30
+    },
+    "api/history.js": {
+      "maxDuration": 30
+    },
+    "api/audit-record.js": {
+      "maxDuration": 60
+    },
+    "api/comparison.js": {
+      "maxDuration": 30
     }
   },
   "headers": [

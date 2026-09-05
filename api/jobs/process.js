@@ -1,4 +1,4 @@
-import { processLargeAuditJob } from '../../lib/jobs/large-audit.js';
+import { getLargeAuditJobStatus, processLargeAuditJob } from '../../lib/jobs/large-audit.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -10,6 +10,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ job });
   } catch (error) {
     console.error('[jobs/process]', error);
-    return res.status(400).json({ error: error?.message || 'No se pudo procesar el lote.' });
+    const job = error?.job || (req?.body?.id ? await getLargeAuditJobStatus(req.body.id).catch(()=>null) : null);
+    return res.status(error?.retryable ? 503 : 400).json({ error: error?.message || 'No se pudo procesar el lote.', retryable:Boolean(error?.retryable), job });
   }
 }

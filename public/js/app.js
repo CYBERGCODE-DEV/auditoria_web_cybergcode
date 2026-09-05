@@ -10,6 +10,7 @@ let currentCacheState = '—';
 let workingStartedAt = 0;
 let workingTimerHandle = null;
 let currentLargeJobId = null;
+let platformState = { status:null, projects:[], history:[], currentProjectId:null };
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 function syncThemeButton() {
@@ -105,6 +106,7 @@ function activateDashboardTab(name = 'overview') {
     }
   });
   syncResponsiveTableLabels();
+  if (['project','history','compare'].includes(name)) loadPlatformView(name).catch((error) => console.warn('[platform-view]', error));
 }
 
 document.querySelectorAll('.dashboard-tab').forEach((button) => button.addEventListener('click', () => activateDashboardTab(button.dataset.tab)));
@@ -462,7 +464,8 @@ function applyAuditTabAvailability(audit) {
   const available = {
     overview:true, seo:m.seo !== 'skipped', headings:m.headings !== 'skipped', content:m.content !== 'skipped', ux:m.uxCro !== 'skipped', pages:true, coverage:true,
     images:m.images !== 'skipped', performance:m.performance !== 'skipped', accessibility:m.accessibility !== 'skipped', visual:m.cssColors !== 'skipped' || m.screenshots !== 'skipped',
-    infrastructure:m.security !== 'skipped' || m.dnsTls !== 'skipped', peru:m.compliancePe !== 'skipped', iso:m.isoStandards !== 'skipped', findings:true
+    infrastructure:m.security !== 'skipped' || m.dnsTls !== 'skipped', peru:m.compliancePe !== 'skipped', iso:m.isoStandards !== 'skipped', findings:true,
+    project:true, history:true, compare:true
   };
   document.querySelectorAll('.dashboard-tab').forEach((button)=>{ button.hidden = available[button.dataset.tab] === false; });
   syncDashboardTabAvailability();
@@ -897,7 +900,9 @@ function renderAudit(audit) {
   applyAuditTabAvailability(audit); renderScores(audit); renderStats(audit); renderConsistency(audit); renderActionPlan(audit); renderSeo(audit); renderHeadings(audit); renderContent(audit); renderUx(audit); renderImages(audit); renderPageSpeed(audit); renderFieldPerformance(audit); renderBrowser(audit); renderCssAnalysis(audit); renderAccessibility(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderCoverage(audit); renderOverview(audit);
   syncResponsiveTableLabels();
   $('#modules').innerHTML = Object.entries(audit.modules).map(([key,value]) => `<div class="module"><b>${escapeHtml(key)}</b><span class="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join('');
+  syncCurrentProjectFromAudit(audit);
 }
+
 
 
 function severityLabel(value) {
@@ -940,7 +945,7 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.13.2'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.15.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
@@ -1026,7 +1031,10 @@ function updateLargeJobProgress(job) {
   $('#jobProgressPhase').textContent = phase;
   $('#jobProgressCount').textContent = job.crawlCompleteReason === 'queue-exhausted' ? `${processed} URLs procesadas · cola agotada antes del límite ${max}` : `${processed} / ${max} URLs procesadas · ${job.successfulCount || 0} HTML · ${job.failedCount || 0} fallidas`;
   $('#jobProgressBar').style.width = `${ratio}%`;
-  $('#jobProgressDetail').textContent = `Descubiertas: ${job.discoveredCount || 0} · Cola: ${job.queueRemaining || 0} · Lotes guardados: ${job.chunkCount || 0}.`;
+  const orchestration = job.orchestration?.mode === 'queue' ? 'Cola autónoma Vercel' : 'Procesamiento desde cliente';
+  const retries = Number(job.retryCount || 0) + Number(job.finalizeRetryCount || 0);
+  const lastEvent = job.events?.length ? job.events[job.events.length - 1]?.message : '';
+  $('#jobProgressDetail').textContent = `Descubiertas: ${job.discoveredCount || 0} · Cola URL: ${job.queueRemaining || 0} · Lotes: ${job.chunkCount || 0} · ${orchestration}${retries ? ` · Reintentos: ${retries}` : ''}${lastEvent ? ` · ${lastEvent}` : ''}.`;
   if (job.status === 'crawl-complete') { setWorkingStep('#workingStepAudit', 'done'); setWorkingStep('#workingStepConsolidate', 'active'); }
   if (job.status === 'finalizing') setWorkingStep('#workingStepConsolidate', 'active');
   if (job.status === 'completed') setWorkingStep('#workingStepConsolidate', 'done');
@@ -1062,11 +1070,64 @@ async function getLargeJobResult(id) {
   return data;
 }
 
+const sleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function waitForAutonomousJob(job, target) {
+  let current = job;
+  while (current && !['completed','failed','cancelled'].includes(current.status)) {
+    saveLargeJobReference(current, target || current.target);
+    updateLargeJobProgress(current);
+    await sleepMs(1400);
+    current = await getLargeJobStatus(current.id);
+  }
+  if (!current) throw new Error('El job dejó de estar disponible antes de completar.');
+  updateLargeJobProgress(current);
+  if (current.status === 'failed') { clearLargeJobReference(); throw new Error(current.error || 'El job de auditoría falló.'); }
+  if (current.status === 'cancelled') { clearLargeJobReference(); throw new Error('La auditoría grande fue cancelada.'); }
+  const stored = await getLargeJobResult(current.id);
+  if (!stored?.result) throw new Error('El job finalizó pero el resultado aún no está disponible.');
+  clearLargeJobReference();
+  return stored.result;
+}
+
+async function processClientJobStep(job) {
+  let attempts = 0;
+  while (attempts < 5) {
+    const response = await fetch('/api/jobs/process', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:job.id }) });
+    const data = await response.json();
+    if (response.ok) return data.job;
+    if (!data.retryable) throw new Error(data.error || 'Falló un lote del rastreo.');
+    attempts += 1;
+    if (data.job) updateLargeJobProgress(data.job);
+    await sleepMs(Math.min(6000, 700 * (2 ** attempts)));
+    job = await getLargeJobStatus(job.id);
+  }
+  throw new Error('El lote agotó los reintentos disponibles desde el navegador.');
+}
+
+async function finalizeClientJob(job) {
+  let attempts = 0;
+  while (attempts < 4) {
+    const response = await fetch('/api/jobs/finalize', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:job.id }) });
+    const data = await response.json();
+    if (response.ok) return data;
+    if (!data.retryable) throw new Error(data.error || 'No se pudo consolidar la auditoría grande.');
+    attempts += 1;
+    if (data.job) updateLargeJobProgress(data.job);
+    await sleepMs(Math.min(9000, 1000 * (2 ** attempts)));
+  }
+  throw new Error('La consolidación agotó sus reintentos disponibles desde el navegador.');
+}
+
 async function runLargeAudit(payload = null, { resumeId = null, resumeTarget = null } = {}) {
   let job;
+  let orchestrationMode = null;
+  const target = resumeTarget || payload?.url || '';
+
   if (resumeId) {
     job = await getLargeJobStatus(resumeId);
     currentLargeJobId = job.id;
+    orchestrationMode = job.orchestration?.mode || 'client';
     updateLargeJobProgress(job);
     if (job.status === 'completed') {
       const stored = await getLargeJobResult(job.id);
@@ -1078,29 +1139,31 @@ async function runLargeAudit(payload = null, { resumeId = null, resumeTarget = n
     const startData = await startResponse.json();
     if (!startResponse.ok) throw new Error(startData.error || 'No se pudo iniciar el job de auditoría.');
     job = startData.job;
+    orchestrationMode = startData.orchestration?.mode || job.orchestration?.mode || 'client';
     currentLargeJobId = job.id;
-    saveLargeJobReference(job, payload?.url || job.target);
+    saveLargeJobReference(job, target || job.target);
     updateLargeJobProgress(job);
   }
 
+  if (orchestrationMode === 'queue' || job.orchestration?.mode === 'queue') {
+    currentCacheState = 'JOB AUTÓNOMO';
+    return waitForAutonomousJob(job, target || job.target);
+  }
+
+  currentCacheState = 'JOB CLIENTE';
   while (job.status === 'crawling') {
-    const response = await fetch('/api/jobs/process', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:job.id }) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Falló un lote del rastreo.');
-    job = data.job;
-    saveLargeJobReference(job, resumeTarget || payload?.url || job.target);
+    job = await processClientJobStep(job);
+    saveLargeJobReference(job, target || job.target);
     updateLargeJobProgress(job);
-    if (data.job?.busy) await new Promise((resolve) => setTimeout(resolve, 900));
-    else await new Promise((resolve) => setTimeout(resolve, 120));
+    if (job?.busy) await sleepMs(900);
+    else await sleepMs(120);
   }
 
   if (job.status === 'failed') { clearLargeJobReference(); throw new Error(job.error || 'El job de auditoría falló.'); }
   if (job.status === 'cancelled') { clearLargeJobReference(); throw new Error('La auditoría grande fue cancelada.'); }
   if (job.status !== 'crawl-complete' && job.status !== 'finalizing') throw new Error(`Estado de job inesperado: ${job.status}`);
   updateLargeJobProgress({ ...job, status:'finalizing' });
-  const finalResponse = await fetch('/api/jobs/finalize', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:job.id }) });
-  const finalData = await finalResponse.json();
-  if (!finalResponse.ok) throw new Error(finalData.error || 'No se pudo consolidar la auditoría grande.');
+  const finalData = await finalizeClientJob(job);
   updateLargeJobProgress(finalData.job);
   clearLargeJobReference();
   return finalData.result;
@@ -1159,6 +1222,274 @@ $('#discardJobButton')?.addEventListener('click', async () => {
   clearLargeJobReference();
 });
 discoverResumableJob();
+
+function platformDate(value) {
+  if (!value) return '—';
+  try { return new Date(value).toLocaleString('es-PE', { dateStyle:'medium', timeStyle:'short' }); } catch { return String(value); }
+}
+
+const PLATFORM_KEY_SESSION = 'cybergcode:platform-key';
+function platformKey() { try { return sessionStorage.getItem(PLATFORM_KEY_SESSION) || ''; } catch { return ''; } }
+function platformHeaders(extra = {}) {
+  const key = platformKey();
+  return { ...extra, ...(key ? { 'x-cybergcode-platform-key':key } : {}) };
+}
+function platformFetch(url, options = {}) { return fetch(url, { ...options, headers:platformHeaders(options.headers || {}) }); }
+
+function setPlatformBadge(state) {
+  const badge = $('#platformDbBadge');
+  if (!badge) return;
+  const dbReady = state?.database?.ready === true;
+  const authorized = state?.access?.authorized === true;
+  const ready = dbReady && authorized;
+  badge.classList.toggle('ready', ready);
+  badge.classList.toggle('protected', dbReady && !authorized);
+  badge.classList.toggle('offline', !dbReady);
+  badge.querySelector('span').textContent = ready ? 'Histórico activo' : (dbReady ? 'Histórico protegido' : 'Histórico local');
+  badge.title = ready ? 'PostgreSQL conectado y acceso administrativo autorizado.' : (dbReady ? 'PostgreSQL conectado; introduce la clave de plataforma para consultar el histórico.' : (state?.database?.reason || 'PostgreSQL no configurado.'));
+}
+
+async function fetchPlatformStatus({ force = false } = {}) {
+  if (platformState.status && !force) return platformState.status;
+  try {
+    const response = await platformFetch('/api/platform-status', { cache:'no-store' });
+    const data = await response.json();
+    platformState.status = data;
+    platformState.projects = data.recentProjects || platformState.projects;
+    setPlatformBadge(data);
+    return data;
+  } catch (error) {
+    platformState.status = { database:{ configured:false, ready:false, reason:String(error?.message || error) } };
+    setPlatformBadge(platformState.status);
+    return platformState.status;
+  }
+}
+
+function syncCurrentProjectFromAudit(audit) {
+  const project = audit?.meta?.platform?.project || null;
+  if (project?.id) {
+    platformState.currentProjectId = project.id;
+    const name = $('#currentProjectName'); if (name) name.textContent = project.name || project.domain;
+    const nameInput = $('#projectNameInput'); if (nameInput) nameInput.value = project.name || project.domain || '';
+    const descInput = $('#projectDescriptionInput'); if (descInput) descInput.value = project.description || '';
+  }
+  const status = audit?.meta?.platform?.status;
+  if (status === 'stored') {
+    $('#platformDbBadge')?.classList.add('ready');
+    const label = $('#platformDbBadge span'); if (label) label.textContent = 'Histórico activo';
+  }
+}
+
+async function refreshProjects({ selectCurrent = true } = {}) {
+  const status = await fetchPlatformStatus();
+  if (!status?.database?.ready || !status?.access?.authorized) {
+    platformState.projects = [];
+    renderPlatformUnavailable(status?.database?.ready ? 'Acceso administrativo requerido para consultar proyectos.' : status?.database?.reason);
+    return [];
+  }
+  const response = await platformFetch('/api/projects?limit=100', { cache:'no-store' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No se pudieron cargar los proyectos.');
+  platformState.projects = data.projects || [];
+  if (selectCurrent && !platformState.currentProjectId) {
+    const host = currentAudit?.meta?.target ? new URL(currentAudit.meta.target).hostname.replace(/^www\./,'') : null;
+    platformState.currentProjectId = platformState.projects.find((project) => project.domain === host)?.id || platformState.projects[0]?.id || null;
+  }
+  renderProjectList();
+  fillProjectSelectors();
+  return platformState.projects;
+}
+
+function renderPlatformUnavailable(reason = '') {
+  const pill = $('#platformStatusPill'); if (pill) { pill.textContent = 'No configurado'; pill.classList.remove('pass'); }
+  const metrics = $('#platformStatusMetrics');
+  if (metrics) metrics.innerHTML = `<div class="source-unavailable"><strong>Histórico persistente desactivado</strong>${escapeHtml(reason || 'Configura DATABASE_URL para activar proyectos, histórico y comparativas.')}</div>`;
+  const projectList = $('#projectList'); if (projectList) projectList.innerHTML = '<div class="source-unavailable"><strong>Sin base de datos</strong>El auditor sigue funcionando normalmente; solo la persistencia histórica está desactivada.</div>';
+  const history = $('#historyList'); if (history) history.innerHTML = '<div class="source-unavailable"><strong>Histórico no disponible</strong>No se inventan ejecuciones pasadas.</div>';
+}
+
+function renderProjectList() {
+  const node = $('#projectList'); if (!node) return;
+  if (!platformState.projects.length) {
+    node.innerHTML = '<div class="source-unavailable"><strong>Aún no hay proyectos</strong>Completa una auditoría con PostgreSQL conectado para crear el proyecto automáticamente.</div>';
+    return;
+  }
+  node.innerHTML = platformState.projects.map((project) => `<button class="project-card ${project.id === platformState.currentProjectId ? 'active' : ''}" type="button" data-project-id="${escapeHtml(project.id)}"><span><strong>${escapeHtml(project.name || project.domain)}</strong><small>${escapeHtml(project.domain)}</small></span><span class="project-card-metrics"><b>${project.auditCount}</b><small>auditorías</small><b>${project.lastScore ?? '—'}</b><small>último score</small></span><em>${escapeHtml(platformDate(project.lastAuditAt))}</em></button>`).join('');
+  node.querySelectorAll('[data-project-id]').forEach((button) => button.addEventListener('click', async () => {
+    platformState.currentProjectId = button.dataset.projectId;
+    renderProjectList(); fillProjectSelectors(); await loadProjectHistory(platformState.currentProjectId); renderCurrentProjectPanel();
+  }));
+}
+
+function renderCurrentProjectPanel() {
+  const project = platformState.projects.find((item) => item.id === platformState.currentProjectId) || currentAudit?.meta?.platform?.project || null;
+  if (!project) {
+    $('#currentProjectName').textContent = 'Sin proyecto persistente';
+    $('#currentProjectMetrics').innerHTML = '<div class="source-unavailable"><strong>Proyecto no disponible</strong>Ejecuta una auditoría con DATABASE_URL configurada.</div>';
+    $('#projectEditForm')?.classList.add('hidden');
+    return;
+  }
+  $('#projectEditForm')?.classList.remove('hidden');
+  $('#currentProjectName').textContent = project.name || project.domain;
+  $('#projectNameInput').value = project.name || project.domain || '';
+  $('#projectDescriptionInput').value = project.description || '';
+  $('#currentProjectMetrics').innerHTML = metricRows([
+    ['ID', project.id], ['Dominio', project.domain], ['Auditorías', String(project.auditCount ?? 0)], ['Última auditoría', platformDate(project.lastAuditAt)], ['Último score', project.lastScore ?? '—']
+  ]);
+}
+
+function fillProjectSelectors() {
+  const historySelect = $('#historyProjectSelect');
+  if (historySelect) {
+    historySelect.innerHTML = platformState.projects.map((project) => `<option value="${escapeHtml(project.id)}" ${project.id === platformState.currentProjectId ? 'selected' : ''}>${escapeHtml(project.name || project.domain)}</option>`).join('');
+  }
+}
+
+async function renderProjectView() {
+  const status = await fetchPlatformStatus();
+  const ready = status?.database?.ready;
+  const authorized = status?.access?.authorized === true;
+  const pill = $('#platformStatusPill');
+  if (pill) { pill.textContent = !ready ? 'No configurado' : (authorized ? 'Conectado' : 'Protegido'); pill.classList.toggle('pass', ready && authorized); }
+  if (!ready) { renderPlatformUnavailable(status?.database?.reason); return; }
+  $('#platformStatusMetrics').innerHTML = metricRows([
+    ['Proveedor', status.database.provider || 'PostgreSQL'], ['Base de datos', 'Conectada'], ['Acceso', authorized ? 'Autorizado' : (status.access?.configured ? 'Clave requerida' : 'CYBERGCODE_PLATFORM_KEY no configurada')], ['Última comprobación', platformDate(status.database.serverTime)]
+  ]);
+  if (!authorized) {
+    $('#projectList').innerHTML = '<div class="source-unavailable"><strong>Histórico protegido</strong>Introduce la clave administrativa configurada en Vercel para consultar proyectos y auditorías.</div>';
+    return;
+  }
+  await refreshProjects();
+  renderCurrentProjectPanel();
+}
+
+async function loadProjectHistory(projectId = platformState.currentProjectId) {
+  if (!projectId) { platformState.history = []; renderHistory(); return []; }
+  const response = await platformFetch(`/api/history?projectId=${encodeURIComponent(projectId)}&limit=60`, { cache:'no-store' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No se pudo cargar el histórico.');
+  platformState.history = data.audits || [];
+  renderHistory();
+  fillComparisonSelectors();
+  return platformState.history;
+}
+
+function renderHistory() {
+  const summary = $('#historySummary');
+  const list = $('#historyList');
+  if (!summary || !list) return;
+  const rows = platformState.history || [];
+  if (!rows.length) {
+    summary.innerHTML = '';
+    list.innerHTML = '<div class="source-unavailable"><strong>Sin auditorías persistidas</strong>Las nuevas auditorías aparecerán aquí automáticamente.</div>';
+    return;
+  }
+  const scores = rows.map((audit) => audit.globalScore).filter(Number.isFinite);
+  const latest = rows[0];
+  summary.innerHTML = `<span><b>${rows.length}</b><small>auditorías cargadas</small></span><span><b>${latest?.globalScore ?? '—'}</b><small>último score</small></span><span><b>${scores.length ? Math.min(...scores) : '—'}</b><small>mínimo</small></span><span><b>${scores.length ? Math.max(...scores) : '—'}</b><small>máximo</small></span>`;
+  list.innerHTML = rows.map((audit, index) => `<article class="history-item"><div class="history-score"><strong>${audit.globalScore ?? '—'}</strong><small>/100</small></div><div><strong>${escapeHtml(platformDate(audit.completedAt))}</strong><small>${escapeHtml(audit.id)} · ${audit.pagesCrawled} páginas · ${audit.findingsTotal} hallazgos</small><span>${escapeHtml(audit.mode || 'Auditoría')}</span></div><div class="history-actions"><button type="button" class="mini-action" data-compare-before="${escapeHtml(audit.id)}">Antes</button><button type="button" class="mini-action" data-compare-after="${escapeHtml(audit.id)}">Después</button>${audit.resultStored ? `<button type="button" class="mini-action" data-load-audit="${escapeHtml(audit.id)}">Abrir</button>` : ''}</div></article>`).join('');
+  list.querySelectorAll('[data-compare-before]').forEach((button) => button.addEventListener('click', () => { activateDashboardTab('compare'); $('#compareBefore').value = button.dataset.compareBefore; }));
+  list.querySelectorAll('[data-compare-after]').forEach((button) => button.addEventListener('click', () => { activateDashboardTab('compare'); $('#compareAfter').value = button.dataset.compareAfter; }));
+  list.querySelectorAll('[data-load-audit]').forEach((button) => button.addEventListener('click', async () => {
+    const response = await platformFetch(`/api/audit-record?id=${encodeURIComponent(button.dataset.loadAudit)}&result=1`, { cache:'no-store' });
+    const data = await response.json();
+    if (!response.ok || !data.audit?.result) return alert(data.error || 'El resultado completo no está almacenado.');
+    renderAudit(data.audit.result); view('dashboard');
+  }));
+}
+
+function fillComparisonSelectors() {
+  const before = $('#compareBefore'), after = $('#compareAfter');
+  if (!before || !after) return;
+  const options = (platformState.history || []).map((audit) => `<option value="${escapeHtml(audit.id)}">${escapeHtml(platformDate(audit.completedAt))} · ${audit.globalScore ?? '—'}/100</option>`).join('');
+  before.innerHTML = options; after.innerHTML = options;
+  if (platformState.history.length >= 2) {
+    before.value = platformState.history[platformState.history.length - 1].id;
+    after.value = platformState.history[0].id;
+  }
+}
+
+async function renderHistoryView() {
+  const status = await fetchPlatformStatus();
+  if (!status?.database?.ready || !status?.access?.authorized) { renderPlatformUnavailable(status?.database?.ready ? 'Acceso administrativo requerido.' : status?.database?.reason); return; }
+  await refreshProjects();
+  if (platformState.currentProjectId) await loadProjectHistory(platformState.currentProjectId);
+}
+
+function deltaClass(item) {
+  if (!item || item.unchanged) return 'neutral';
+  return item.improved ? 'improved' : 'worsened';
+}
+function deltaText(item, unit = '') {
+  if (!item) return 'N/D';
+  const sign = item.change > 0 ? '+' : '';
+  const decimals = Math.abs(item.change) < 1 && item.change !== 0 ? 3 : 0;
+  return `${item.before}${unit} → ${item.after}${unit} (${sign}${Number(item.change).toFixed(decimals)}${unit})`;
+}
+function comparisonRows(items) {
+  return Object.entries(items).map(([label,item]) => `<div class="comparison-row ${deltaClass(item)}"><span>${escapeHtml(label)}</span><b>${escapeHtml(deltaText(item))}</b></div>`).join('');
+}
+
+async function runComparisonRequest() {
+  const before = $('#compareBefore').value, after = $('#compareAfter').value;
+  if (!before || !after || before === after) { $('#comparisonHint').textContent = 'Selecciona dos auditorías diferentes.'; return; }
+  $('#comparisonHint').textContent = 'Calculando deltas sobre datos persistidos…';
+  const response = await platformFetch(`/api/comparison?before=${encodeURIComponent(before)}&after=${encodeURIComponent(after)}`, { cache:'no-store' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No se pudo comparar.');
+  const c = data.comparison;
+  $('#comparisonResult').classList.remove('hidden');
+  const global = c.scores?.global;
+  const totalFindings = c.findings?.total;
+  $('#comparisonKpis').innerHTML = `<article class="comparison-kpi ${deltaClass(global)}"><span>Score global</span><strong>${global?.after ?? '—'}</strong><small>${global ? `${global.change > 0 ? '+' : ''}${global.change} puntos` : 'N/D'}</small></article><article class="comparison-kpi ${deltaClass(totalFindings)}"><span>Hallazgos</span><strong>${totalFindings?.after ?? '—'}</strong><small>${totalFindings ? `${totalFindings.change > 0 ? '+' : ''}${totalFindings.change}` : 'N/D'}</small></article><article class="comparison-kpi"><span>Antes</span><strong>${escapeHtml(platformDate(c.before?.completedAt))}</strong><small>${escapeHtml(c.before?.id || '')}</small></article><article class="comparison-kpi"><span>Después</span><strong>${escapeHtml(platformDate(c.after?.completedAt))}</strong><small>${escapeHtml(c.after?.id || '')}</small></article>`;
+  $('#comparisonScores').innerHTML = comparisonRows(Object.fromEntries(Object.entries(c.scores?.categories || {}).filter(([,v]) => v)));
+  $('#comparisonFindings').innerHTML = comparisonRows({ 'Total':c.findings?.total, 'Críticos':c.findings?.critical, 'Altos':c.findings?.high, 'Medios':c.findings?.medium });
+  $('#comparisonSeo').innerHTML = comparisonRows({ 'Sin title':c.seo?.missingTitle, 'Titles duplicados':c.seo?.duplicateTitles, 'Sin description':c.seo?.missingDescription, 'Sin canonical':c.seo?.missingCanonical, 'Sin H1':c.seo?.missingH1, 'Enlaces rotos':c.seo?.brokenInternalLinks });
+  const perf = c.performance || {};
+  $('#comparisonPerformance').innerHTML = comparisonRows({ 'Mobile score':perf.mobile?.score, 'Mobile LCP':perf.mobile?.lcp, 'Mobile CLS':perf.mobile?.cls, 'Mobile INP':perf.mobile?.inp, 'Desktop score':perf.desktop?.score, 'Desktop LCP':perf.desktop?.lcp, 'Desktop CLS':perf.desktop?.cls, 'Desktop INP':perf.desktop?.inp });
+  $('#comparisonHint').textContent = 'Comparación completada con snapshots persistidos.';
+}
+
+async function renderCompareView() {
+  const status = await fetchPlatformStatus();
+  if (!status?.database?.ready || !status?.access?.authorized) { renderPlatformUnavailable(status?.database?.ready ? 'Acceso administrativo requerido.' : status?.database?.reason); return; }
+  await refreshProjects();
+  if (platformState.currentProjectId) await loadProjectHistory(platformState.currentProjectId);
+}
+
+async function loadPlatformView(name) {
+  if (name === 'project') return renderProjectView();
+  if (name === 'history') return renderHistoryView();
+  if (name === 'compare') return renderCompareView();
+}
+
+$('#platformAccessForm')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const key = $('#platformAccessKey')?.value || '';
+  try { sessionStorage.setItem(PLATFORM_KEY_SESSION, key); } catch {}
+  platformState.status = null;
+  const status = await fetchPlatformStatus({ force:true });
+  if (!status?.access?.authorized) {
+    $('#platformStatusPill').textContent = status?.access?.configured ? 'Clave inválida' : 'Clave no configurada';
+    return;
+  }
+  await renderProjectView();
+});
+
+$('#refreshProjects')?.addEventListener('click', () => renderProjectView().catch((error) => alert(error.message)));
+$('#historyProjectSelect')?.addEventListener('change', async (event) => { platformState.currentProjectId = event.target.value; renderProjectList(); await loadProjectHistory(event.target.value); renderCurrentProjectPanel(); });
+$('#runComparison')?.addEventListener('click', () => runComparisonRequest().catch((error) => { $('#comparisonHint').textContent = error.message; }));
+$('#projectEditForm')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const id = platformState.currentProjectId;
+  if (!id) return;
+  const response = await platformFetch(`/api/project?id=${encodeURIComponent(id)}`, { method:'PATCH', headers:{'content-type':'application/json'}, body:JSON.stringify({ name:$('#projectNameInput').value, description:$('#projectDescriptionInput').value }) });
+  const data = await response.json();
+  if (!response.ok) return alert(data.error || 'No se pudo guardar el proyecto.');
+  await refreshProjects({ selectCurrent:false }); renderCurrentProjectPanel();
+});
+
+fetchPlatformStatus().catch(() => null);
 
 document.querySelectorAll('[data-open-tab]').forEach(button => button.addEventListener('click', () => activateDashboardTab(button.dataset.openTab)));
 document.querySelectorAll('[data-jump-tab]').forEach(button => button.addEventListener('click', () => { if (!currentAudit) return; activateDashboardTab(button.dataset.jumpTab); document.querySelector('.dashboard-nav')?.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block:'start'}); }));

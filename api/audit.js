@@ -2,6 +2,7 @@ import { runAudit } from '../lib/audit/engine.js';
 import { COMPANY } from '../lib/config/company.js';
 import { makeAuditCacheKey, getCachedAudit, setCachedAudit, STABLE_CACHE_TTL_SECONDS } from '../lib/cache/audit-cache.js';
 import { resolveAuditConfig } from '../lib/config/audit-modes.js';
+import { persistAuditResult } from '../lib/platform/repository.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -39,6 +40,16 @@ export default async function handler(req, res) {
     if (stableMode && !forceFresh) {
       const cached = await getCachedAudit(cacheKey);
       if (cached) {
+        if (cached?.meta?.platform?.status !== 'stored') {
+          try {
+            const stored = await persistAuditResult(cached);
+            cached.meta.platform = stored.status === 'stored'
+              ? { status:'stored', project:stored.project ? { id:stored.project.id, domain:stored.project.domain } : null, auditId:stored.audit?.id || cached.meta.id, fullResultStored:stored.fullResultStored }
+              : { status:'unavailable', reason:stored.reason || 'database-not-configured' };
+          } catch (platformError) {
+            cached.meta.platform = { status:'unavailable', reason:String(platformError?.message || platformError) };
+          }
+        }
         res.setHeader('X-CYBERGCODE-Cache', 'HIT');
         res.setHeader('X-CYBERGCODE-Stability', 'stable');
         return res.status(200).json(cached);
@@ -47,6 +58,15 @@ export default async function handler(req, res) {
 
     const result = await runAudit({ url, maxPages: config.maxPages, pageSpeed: config.pageSpeed, stableMode, aiReview: config.aiReview, auditMode: config.mode, modules: config.modules, devices: config.devices });
     if (result.meta?.consistency) result.meta.consistency.fingerprint = cacheKey.split(':').pop().slice(0, 12).toUpperCase();
+    try {
+      const stored = await persistAuditResult(result);
+      result.meta.platform = stored.status === 'stored'
+        ? { status:'stored', project:stored.project ? { id:stored.project.id, domain:stored.project.domain } : null, auditId:stored.audit?.id || result.meta.id, fullResultStored:stored.fullResultStored }
+        : { status:'unavailable', reason:stored.reason || 'database-not-configured' };
+    } catch (platformError) {
+      console.warn('[audit/platform]', platformError);
+      result.meta.platform = { status:'unavailable', reason:String(platformError?.message || platformError) };
+    }
     let cacheState = 'BYPASS';
     if (stableMode) cacheState = (await setCachedAudit(cacheKey, result, STABLE_CACHE_TTL_SECONDS)) ? 'STORED' : 'BYPASS';
     res.setHeader('X-CYBERGCODE-Cache', cacheState);
