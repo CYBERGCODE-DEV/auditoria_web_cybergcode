@@ -8,8 +8,8 @@ async function handler(req, res) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     if (!body.id) throw new Error('Falta el ID del job.');
-    await assertLargeAuditJobAccess(body.id, req.headers?.['x-cybergcode-job-token']);
     if (!await requireJobRateLimit(req, res, body.id, { scope:'jobs/cancel', cost:2 })) return;
+    await assertLargeAuditJobAccess(body.id, req.headers?.['x-cybergcode-job-token'],req.cybergcodeUser);
     const job = await cancelLargeAuditJob(body.id);
     return res.status(200).json({ job });
   } catch (error) {

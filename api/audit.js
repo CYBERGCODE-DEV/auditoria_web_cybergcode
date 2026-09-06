@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { runAudit } from '../lib/audit/engine.js';
 import { COMPANY } from '../lib/config/company.js';
 import { makeAuditCacheKey, getCachedAudit, setCachedAudit, STABLE_CACHE_TTL_SECONDS } from '../lib/cache/audit-cache.js';
@@ -13,6 +14,7 @@ async function handler(req, res) {
   if (!await requireAuditAccess(req, res, { scope:'audit', cost:5 })) return;
 
   try {
+    const owner = req.cybergcodeUser ? { organizationId:req.cybergcodeUser.organizationId, userId:req.cybergcodeUser.id } : null;
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const url = body.url;
     const stableMode = body.stableMode !== false;
@@ -44,28 +46,39 @@ async function handler(req, res) {
     if (stableMode && !forceFresh) {
       const cached = await getCachedAudit(cacheKey);
       if (cached) {
-        if (auditPersistenceAllowed() && cached?.meta?.platform?.status !== 'stored') {
+        const cachedResult = structuredClone(cached);
+        const sourceAuditId = cachedResult.meta?.id || null;
+        cachedResult.meta = {
+          ...(cachedResult.meta || {}),
+          id:`AUD-${crypto.randomUUID().toUpperCase()}`,
+          finishedAt:new Date().toISOString(),
+          cacheReuse:{ reused:true, sourceAuditId, sourceFinishedAt:cachedResult.meta?.finishedAt || null }
+        };
+        if (owner) cachedResult.meta.owner = owner;
+        else delete cachedResult.meta.owner;
+        if (auditPersistenceAllowed(req.cybergcodeUser)) {
           try {
-            const stored = await persistAuditResult(cached);
-            cached.meta.platform = stored.status === 'stored'
-              ? { status:'stored', project:stored.project ? { id:stored.project.id, domain:stored.project.domain } : null, auditId:stored.audit?.id || cached.meta.id, fullResultStored:stored.fullResultStored }
+            const stored = await persistAuditResult(cachedResult,{ actor:req.cybergcodeUser });
+            cachedResult.meta.platform = stored.status === 'stored'
+              ? { status:'stored', project:stored.project ? { id:stored.project.id, domain:stored.project.domain } : null, auditId:stored.audit?.id || cachedResult.meta.id, fullResultStored:stored.fullResultStored }
               : { status:'unavailable', reason:stored.reason || 'database-not-configured' };
           } catch (platformError) {
-            cached.meta.platform = { status:'unavailable', reason:String(platformError?.message || platformError) };
+            cachedResult.meta.platform = { status:'unavailable', reason:String(platformError?.message || platformError) };
           }
-        } else if (!auditPersistenceAllowed()) cached.meta.platform = { status:'disabled', reason:'anonymous-persistence-disabled' };
-        attachReportAuthorization(cached);
+        } else cachedResult.meta.platform = { status:'disabled', reason:'anonymous-persistence-disabled' };
+        attachReportAuthorization(cachedResult);
         res.setHeader('X-CYBERGCODE-Cache', 'HIT');
         res.setHeader('X-CYBERGCODE-Stability', 'stable');
-        return res.status(200).json(cached);
+        return res.status(200).json(cachedResult);
       }
     }
 
     const result = await runAudit({ url, maxPages: config.maxPages, pageSpeed: config.pageSpeed, stableMode, aiReview: config.aiReview, auditMode: config.mode, modules: config.modules, devices: config.devices });
+    if (owner) result.meta.owner = owner;
     if (result.meta?.consistency && !result.meta.consistency.fingerprint) result.meta.consistency.fingerprint = cacheKey.split(':').pop().slice(0, 16).toUpperCase();
     try {
-      if (!auditPersistenceAllowed()) throw Object.assign(new Error('anonymous-persistence-disabled'), { expected:true });
-      const stored = await persistAuditResult(result);
+      if (!auditPersistenceAllowed(req.cybergcodeUser)) throw Object.assign(new Error('anonymous-persistence-disabled'), { expected:true });
+      const stored = await persistAuditResult(result,{ actor:req.cybergcodeUser });
       result.meta.platform = stored.status === 'stored'
         ? { status:'stored', project:stored.project ? { id:stored.project.id, domain:stored.project.domain } : null, auditId:stored.audit?.id || result.meta.id, fullResultStored:stored.fullResultStored }
         : { status:'unavailable', reason:stored.reason || 'database-not-configured' };

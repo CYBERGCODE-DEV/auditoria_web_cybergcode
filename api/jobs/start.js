@@ -18,7 +18,8 @@ async function handler(req, res) {
       devices: body.devices || {},
       pageSpeed: body.pageSpeed !== false,
       stableMode: body.stableMode !== false,
-      aiReview: body.aiReview === true
+      aiReview: body.aiReview === true,
+      actor:req.cybergcodeUser
     });
     const orchestration = await enqueueLargeAuditStep(job.id, 'process');
     const current = await getLargeAuditJobStatus(job.id);

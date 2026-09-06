@@ -1,5 +1,6 @@
 import { buildAuditPdf } from '../lib/report/pdf.js';
 import { requireAuditAccess } from '../lib/security/api-access.js';
+import { authConfigured } from '../lib/auth/supabase.js';
 import { verifyReportAuthorization } from '../lib/report/integrity.js';
 import { withApiObservability } from '../lib/observability/api.js';
 
@@ -11,6 +12,9 @@ async function handler(req, res) {
     if (!audit?.meta?.id || !Array.isArray(audit?.findings)) return res.status(400).json({ error: 'Informe de auditoría inválido.' });
     const authorization = verifyReportAuthorization(audit);
     if (!authorization.ok) return res.status(authorization.code === 'REPORT_SIGNING_NOT_CONFIGURED' ? 503 : 403).json({ error:authorization.message, code:authorization.code });
+    if (authConfigured() && (!audit.meta?.owner?.organizationId || audit.meta.owner.organizationId !== req.cybergcodeUser?.organizationId)) {
+      return res.status(403).json({ error:'Este informe no pertenece a tu organización.', code:'REPORT_TENANT_MISMATCH' });
+    }
     const pdf = await buildAuditPdf(audit);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${audit.meta.id}.pdf"`);

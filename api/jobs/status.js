@@ -8,8 +8,8 @@ async function handler(req, res) {
   try {
     const id = String(req.query?.id || '');
     if (!id) throw new Error('Falta el ID del job.');
-    await assertLargeAuditJobAccess(id, req.headers?.['x-cybergcode-job-token']);
     if (!await requireJobRateLimit(req, res, id, { scope:'jobs/status' })) return;
+    await assertLargeAuditJobAccess(id, req.headers?.['x-cybergcode-job-token'],req.cybergcodeUser);
     const job = await getLargeAuditJobStatus(id);
     if (!job) return res.status(404).json({ error: 'Job no encontrado o expirado.' });
     return res.status(200).json({ job });

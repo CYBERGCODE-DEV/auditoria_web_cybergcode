@@ -10,8 +10,8 @@ async function handler(req, res) {
     const id = String(req.query?.id || '');
     const url = String(req.query?.url || '');
     if (!id || !url) throw new Error('Faltan id o url.');
-    await assertLargeAuditJobAccess(id, req.headers?.['x-cybergcode-job-token']);
     if (!await requireJobRateLimit(req, res, id, { scope:'jobs/page' })) return;
+    await assertLargeAuditJobAccess(id, req.headers?.['x-cybergcode-job-token'],req.cybergcodeUser);
     const job = await getJob(id);
     if (!job) return res.status(404).json({ error: 'Job no encontrado o expirado.' });
     for (let i = 0; i < Number(job.chunkCount || 0); i += 1) {

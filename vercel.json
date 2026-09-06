@@ -3,6 +3,12 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
+    "api/auth.js": {
+      "maxDuration": 30
+    },
+    "api/demo.js": {
+      "maxDuration": 120
+    },
     "api/audit.js": {
       "maxDuration": 300
     },
@@ -114,6 +120,18 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/demo",
+      "destination": "/public/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/public/index.html"
+    },
+    {
+      "source": "/app",
+      "destination": "/public/index.html"
+    },
     {
       "source": "/api/platform-status",
       "destination": "/api/platform?resource=status"

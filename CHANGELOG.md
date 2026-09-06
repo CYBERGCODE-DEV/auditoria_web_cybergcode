@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.18.0 — portal público, cuentas privadas y aislamiento por organización
+
+- Separa una demostración pública limitada de la plataforma completa autenticada.
+- Añade sesiones seguras con Supabase Auth mediante cookies `HttpOnly`, renovación y cierre de sesión.
+- Añade administración de invitaciones y roles `admin`, `analyst` y `reader`; el rol privilegiado solo se acepta desde metadatos administrados por servidor.
+- Exige cuenta de administrador o analista para auditar, procesar jobs y exportar PDF cuando Supabase está configurado.
+- Aísla proyectos, históricos, comparaciones, jobs y reportes por organización y usuario.
+- Firma los PDF y comprueba que el resultado firmado pertenezca a la organización de la sesión.
+- Añade migraciones SQL multiusuario para instalaciones MySQL y PostgreSQL existentes.
+- Mantiene pagos, suscripciones y facturación electrónica fuera de esta versión.
+
 ## v0.17.1 — inicio profesional y progreso verificable
 
 - Inicio rediseñado para explicar con claridad qué analiza la plataforma, cómo funciona y qué entrega.

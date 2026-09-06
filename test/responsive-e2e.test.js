@@ -42,8 +42,10 @@ test('interfaz sin overflow y menús conectados en seis viewports', { timeout:12
     for (const width of [320,360,390,768,1024,1440]) {
       await page.setViewport({ width, height:900, deviceScaleFactor:1 });
       await page.goto(`http://127.0.0.1:${app.address().port}/`, { waitUntil:'networkidle0' });
-      const layout = await page.evaluate(() => ({ scrollWidth:document.documentElement.scrollWidth, clientWidth:document.documentElement.clientWidth, title:document.title, form:Boolean(document.querySelector('#auditForm')) }));
+      const layout = await page.evaluate(() => ({ scrollWidth:document.documentElement.scrollWidth, clientWidth:document.documentElement.clientWidth, title:document.title, form:Boolean(document.querySelector('#auditForm')), demo:Boolean(document.querySelector('#demoForm')), publicVisible:document.querySelector('#publicPortal')?.hidden === false }));
       assert.equal(layout.form, true);
+      assert.equal(layout.demo, true);
+      assert.equal(layout.publicVisible, true);
       assert.match(layout.title, /CYBERGCODE/i);
       assert.ok(layout.scrollWidth <= layout.clientWidth + 1, `${width}px: ${layout.scrollWidth} > ${layout.clientWidth}`);
       if (visualDir && width === 390) await page.screenshot({ path:path.join(visualDir, 'home-mobile-390.png'), fullPage:true });
@@ -82,6 +84,7 @@ test('interfaz sin overflow y menús conectados en seis viewports', { timeout:12
       await request.continue();
     });
     await progressPage.goto(`http://127.0.0.1:${app.address().port}/`, { waitUntil:'networkidle0' });
+    await progressPage.evaluate(() => { document.querySelector('#publicPortal').hidden=true; document.querySelector('#privateApp').hidden=false; document.body.dataset.view='hero'; });
     await progressPage.type('#url', 'example.com');
     await progressPage.click('#auditForm button[type="submit"]');
     await progressPage.waitForSelector('#identityStatus.fallback');

@@ -1,5 +1,7 @@
 node_modules/
 .vercel/
+.vercel-cli/
+.visual-review/
 .env
 .env.local
 .DS_Store

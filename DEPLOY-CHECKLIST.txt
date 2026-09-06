@@ -1,17 +1,21 @@
-CYBERGCODE WEB AUDIT INTELLIGENCE — DEPLOY V0.17.1 · MYSQL/MARIADB + POSTGRES
+CYBERGCODE WEB AUDIT INTELLIGENCE — DEPLOY V0.18.0 · CUENTAS PRIVADAS
 
 1. Subir el contenido del ZIP a la raíz del repositorio.
 2. Confirmar package.json, vercel.json, api/, lib/, migrations/ y public/ en la raíz.
    El deployment debe generar 11 Functions; no restaurar los seis endpoints api/platform-* antiguos ni api/queues/.
 3. Vercel instalará mysql2 3.24.3, @neondatabase/serverless y el resto de dependencias.
-4. Confirmar ENGINE 0.17.1 y CG-STABLE-6.
+4. Confirmar ENGINE 0.18.0 y CG-STABLE-6.
 5. Elegir proveedor SQL.
 
 SEGURIDAD OBLIGATORIA EN PRODUCCIÓN
-- Configurar CYBERGCODE_AUDIT_KEY con una clave larga y aleatoria.
+- Crear un proyecto Supabase y desactivar el registro público.
+- Configurar SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY únicamente en Vercel.
+- Crear el primer usuario en Supabase Authentication y colocar su correo exacto en CYBERGCODE_ADMIN_EMAILS.
+- Configurar la URL del sitio y https://DOMINIO/?activate=1 como Redirect URL autorizada en Supabase.
 - Configurar CYBERGCODE_REPORT_SECRET con otro secreto largo para autorizar PDFs.
 - Mantener CYBERGCODE_ALLOW_ANONYMOUS_AUDITS=0.
 - Mantener CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=0.
+- CYBERGCODE_AUDIT_KEY y CYBERGCODE_PLATFORM_KEY solo son fallback legado cuando Supabase no está configurado.
 - Con base SQL, cuotas y locks de jobs usan tablas compartidas y operaciones atómicas; sin base se usa fallback por instancia y debe mantenerse Vercel Firewall.
 
 MYSQL / MARIADB (recomendado si ya trabajas con ese ecosistema)
@@ -19,12 +23,11 @@ MYSQL / MARIADB (recomendado si ya trabajas con ese ecosistema)
 7. En Vercel > Settings > Environment Variables configurar:
    DB_PROVIDER=mysql
    DATABASE_URL=mysql://usuario:password@host:3306/cybergcode_auditoria
-   CYBERGCODE_PLATFORM_KEY=<clave larga aleatoria>
 8. Para MariaDB también puedes usar:
    DB_PROVIDER=mariadb
    DATABASE_URL=mariadb://usuario:password@host:3306/cybergcode_auditoria
 9. Si el servidor exige TLS: DB_SSL=1.
-10. Si prefieres crear las tablas manualmente, ejecutar migrations/mysql/001_platform.sql.
+10. Instalación nueva: ejecutar migrations/mysql/001_platform.sql y después 002_multiuser.sql. Instalación existente: ejecutar únicamente 002_multiuser.sql.
 
 TIDB CLOUD
 11. Usar DB_PROVIDER=tidb y la URL MySQL del cluster; el driver activa TLS para hosts tidbcloud.com.
@@ -32,19 +35,21 @@ TIDB CLOUD
 POSTGRES / NEON (sigue soportado)
 12. DB_PROVIDER=postgres o neon.
 13. DATABASE_URL=postgresql://...
-14. Migración manual opcional: migrations/postgres/001_platform.sql.
+14. Instalación nueva: ejecutar migrations/postgres/001_platform.sql y después 002_multiuser.sql. Instalación existente: ejecutar únicamente 002_multiuser.sql.
 
 VALIDACIÓN
 15. Hacer Redeploy.
-16. Abrir Proyecto e introducir CYBERGCODE_PLATFORM_KEY.
-17. Confirmar Proveedor/Dialecto/Servidor = conectado.
-18. Ejecutar una auditoría de 12–25 páginas.
-19. Ejecutar otra del mismo dominio y revisar Historial.
-20. Abrir Comparar y verificar Antes vs Después.
-21. Probar una auditoría de 100 páginas manteniendo el navegador abierto para validar lotes + persistencia al finalizar.
-22. Exportar PDF.
-23. Intentar exportar un resultado modificado y confirmar rechazo de firma.
-24. Confirmar 401 con una CYBERGCODE_AUDIT_KEY incorrecta y 429 al superar la cuota.
+16. Sin iniciar sesión, ejecutar la demo y comprobar que entrega solo resumen y no guarda histórico.
+17. Iniciar sesión con el administrador y confirmar que aparece el acceso Usuarios.
+18. Invitar un analista; usar el mismo ID de organización para compartir proyectos o dejarlo vacío para aislarlo.
+19. Confirmar Proveedor/Dialecto/Servidor = conectado.
+20. Ejecutar una auditoría de 12–25 páginas.
+21. Ejecutar otra del mismo dominio y revisar Historial.
+22. Abrir Comparar y verificar Antes vs Después.
+23. Probar una auditoría de 100 páginas manteniendo el navegador abierto para validar lotes + persistencia al finalizar.
+24. Exportar PDF y confirmar que otra organización no puede descargarlo.
+25. Intentar exportar un resultado modificado y confirmar rechazo de firma.
+26. Confirmar 401 sin sesión, 403 con rol lector y 429 al superar la cuota.
 
 SIN BASE DE DATOS
 - El scanner sigue funcionando.
@@ -53,6 +58,7 @@ SIN BASE DE DATOS
 
 SEGURIDAD
 - No expongas DATABASE_URL en public/ ni JavaScript del navegador.
+- No expongas SUPABASE_SERVICE_ROLE_KEY en GitHub, public/, VITE_* o NEXT_PUBLIC_*.
 - Usa un usuario SQL exclusivo con permisos únicamente sobre la base CYBERGCODE.
 - Mantén DB_POOL_LIMIT bajo (por defecto 3) en serverless.
 - Usa TLS cuando el proveedor lo soporte/requiera.

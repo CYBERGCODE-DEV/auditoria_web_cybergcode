@@ -1,6 +1,26 @@
-# CYBERGCODE Web Audit Intelligence v0.17.1
+# CYBERGCODE Web Audit Intelligence v0.18.0
 
 Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
+
+## Acceso público y privado
+
+V0.18 separa dos experiencias:
+
+- **Demostración pública:** analiza una sola página, no usa PageSpeed, no persiste resultados y entrega únicamente un resumen y tres prioridades reales. Los módulos bloqueados no se ejecutan ni se sustituyen con datos inventados.
+- **Plataforma privada:** requiere una cuenta creada por un administrador. Los roles `admin` y `analyst` pueden auditar; `reader` queda limitado a consultas. Los proyectos, auditorías, jobs y PDF se aíslan por organización.
+
+La autenticación usa Supabase Auth en el servidor. Los tokens se guardan en cookies `HttpOnly`, no en `localStorage` ni en campos visibles. Cuando Supabase está configurado, la antigua `CYBERGCODE_AUDIT_KEY` deja de intervenir en el navegador.
+
+### Alta inicial del administrador
+
+1. Crear un proyecto en Supabase y desactivar el registro público si solo habrá cuentas invitadas.
+2. En **Authentication → Users**, crear o invitar el primer usuario.
+3. En Vercel, abrir **Environment Variables** y configurar `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` para Production y Preview.
+4. Añadir el correo exacto del primer usuario en `CYBERGCODE_ADMIN_EMAILS`. Se admiten varios separados por coma.
+5. Configurar en Supabase la URL del deployment como Site URL y `https://tu-dominio/?activate=1` como Redirect URL.
+6. Redesplegar. El administrador ya podrá abrir **Usuarios**, asignar una organización existente o dejarla vacía para crear un espacio aislado.
+
+Nunca se debe colocar `SUPABASE_SERVICE_ROLE_KEY` en `public/`, GitHub, `VITE_*` o `NEXT_PUBLIC_*`.
 
 ## Principio de integridad
 
@@ -205,6 +225,15 @@ OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.6-luna
 CHROME_EXECUTABLE_PATH=
 CHROMIUM_PACK_URL=
+
+# Inicio de sesión privado
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+CYBERGCODE_ADMIN_EMAILS=administrador@empresa.com
+CYBERGCODE_DEMO_RATE_LIMIT=5
+
+# Fallback legado: solo se usa si Supabase no está configurado
 CYBERGCODE_AUDIT_KEY=
 CYBERGCODE_RATE_LIMIT=30
 CYBERGCODE_JOB_RATE_LIMIT=180
@@ -227,7 +256,9 @@ CYBERGCODE_PLATFORM_KEY=
 
 `DB_PROVIDER` admite `mysql`, `mariadb`, `tidb`, `planetscale`, `postgres` y `neon`. Si no se define, el motor intenta inferir el dialecto por la URL. Las claves externas son opcionales; si una fuente no responde, el informe no crea datos sustitutos.
 
-En producción, `CYBERGCODE_AUDIT_KEY` es obligatoria, debe tener al menos 32 caracteres y protege el scanner; solo se permite omitirla si se acepta explícitamente el riesgo mediante `CYBERGCODE_ALLOW_ANONYMOUS_AUDITS=1`. `CYBERGCODE_REPORT_SECRET` es obligatorio para exportar PDFs firmados y debe ser largo, aleatorio y diferente de las demás claves. La persistencia anónima está desactivada salvo que se establezca explícitamente `CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=1`.
+Con Supabase configurado, las sesiones y roles protegen el scanner y la plataforma; `CYBERGCODE_AUDIT_KEY` y `CYBERGCODE_PLATFORM_KEY` permanecen únicamente como compatibilidad local/legada. Sin Supabase, en producción `CYBERGCODE_AUDIT_KEY` vuelve a ser obligatoria y debe tener al menos 32 caracteres. `CYBERGCODE_REPORT_SECRET` siempre es obligatorio para exportar PDF firmados y debe ser largo, aleatorio y diferente de las demás claves. La persistencia anónima permanece desactivada.
+
+Para guardar proyectos e históricos todavía se necesita una base SQL compatible. En una instalación existente se debe aplicar una sola vez `migrations/mysql/002_multiuser.sql` o `migrations/postgres/002_multiuser.sql`, según el proveedor. La autenticación funciona sin SQL, pero el histórico se mostrará como no disponible y no se inventará persistencia.
 
 Límites operativos verificables: cuando existe una base SQL, el rate limiting y los locks de jobs usan tablas compartidas y actualizaciones atómicas; sin base de datos se declara y utiliza un fallback por instancia. Chromium navega mediante un proxy local que valida DNS y fija una IP pública para cada conexión HTTP/HTTPS, además de la validación por solicitud.
 
@@ -249,7 +280,7 @@ El navegador debe permanecer abierto durante el procesamiento. Si se interrumpe,
 
 1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
 2. Hacer push a la rama conectada a Vercel.
-3. Confirmar **ENGINE 0.17.1** y perfil **CG-STABLE-6**.
+3. Confirmar **ENGINE 0.18.0** y perfil **CG-STABLE-6**.
 4. Probar primero 12–25 páginas.
 5. Probar después 100 páginas y verificar el panel de progreso por lotes.
 6. Recargar durante un job y confirmar que aparece **Reanudar**.
