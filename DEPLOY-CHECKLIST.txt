@@ -1,10 +1,10 @@
-CYBERGCODE WEB AUDIT INTELLIGENCE — DEPLOY V0.18.0 · CUENTAS PRIVADAS
+CYBERGCODE WEB AUDIT INTELLIGENCE — DEPLOY V0.19.0 · ADMINISTRACIÓN Y CUOTAS
 
 1. Subir el contenido del ZIP a la raíz del repositorio.
 2. Confirmar package.json, vercel.json, api/, lib/, migrations/ y public/ en la raíz.
    El deployment debe generar 12 Functions; la demo comparte la Function de identidad para respetar el límite Hobby.
 3. Vercel instalará mysql2 3.24.3, @neondatabase/serverless y el resto de dependencias.
-4. Confirmar ENGINE 0.18.0 y CG-STABLE-6.
+4. Confirmar ENGINE 0.19.0 y CG-STABLE-6.
 5. Elegir proveedor SQL.
 
 SEGURIDAD OBLIGATORIA EN PRODUCCIÓN
@@ -27,7 +27,7 @@ MYSQL / MARIADB (recomendado si ya trabajas con ese ecosistema)
    DB_PROVIDER=mariadb
    DATABASE_URL=mariadb://usuario:password@host:3306/cybergcode_auditoria
 9. Si el servidor exige TLS: DB_SSL=1.
-10. Instalación nueva: ejecutar migrations/mysql/001_platform.sql y después 002_multiuser.sql. Instalación existente: ejecutar únicamente 002_multiuser.sql.
+10. Instalación nueva: ejecutar 001_platform.sql, 002_multiuser.sql y 003_admin_events.sql. Instalación existente: ejecutar 002 y después 003.
 
 TIDB CLOUD
 11. Usar DB_PROVIDER=tidb y la URL MySQL del cluster; el driver activa TLS para hosts tidbcloud.com.
@@ -35,7 +35,7 @@ TIDB CLOUD
 POSTGRES / NEON (sigue soportado)
 12. DB_PROVIDER=postgres o neon.
 13. DATABASE_URL=postgresql://...
-14. Instalación nueva: ejecutar migrations/postgres/001_platform.sql y después 002_multiuser.sql. Instalación existente: ejecutar únicamente 002_multiuser.sql.
+14. Instalación nueva: ejecutar 001_platform.sql, 002_multiuser.sql y 003_admin_events.sql. Instalación existente: ejecutar 002 y después 003.
 
 VALIDACIÓN
 15. Hacer Redeploy.

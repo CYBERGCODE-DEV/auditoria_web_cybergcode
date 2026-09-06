@@ -134,6 +134,14 @@
       "destination": "/public/index.html"
     },
     {
+      "source": "/admin",
+      "destination": "/public/admin.html"
+    },
+    {
+      "source": "/account",
+      "destination": "/public/account.html"
+    },
+    {
       "source": "/api/platform-status",
       "destination": "/api/platform?resource=status"
     },

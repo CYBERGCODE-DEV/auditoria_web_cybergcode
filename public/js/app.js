@@ -110,6 +110,15 @@ function activateDashboardTab(name = 'overview') {
   if (['project','history','compare'].includes(name)) loadPlatformView(name).catch((error) => console.warn('[platform-view]', error));
 }
 
+window.CGAuditOpenPlatform = (name='project') => {
+  hero.classList.add('hidden'); working.classList.add('hidden'); errorBox.classList.add('hidden'); dashboard.classList.remove('hidden'); dashboard.classList.add('platform-only');
+  document.body.dataset.view='dashboard'; $('#targetName').textContent='Espacio de trabajo'; $('#auditMeta').textContent='Proyectos, histórico y comparaciones de tu organización'; $('#exportPdf').classList.add('hidden');
+  activateDashboardTab(['project','history','compare'].includes(name)?name:'project');
+};
+window.CGAuditOpenNew = () => {
+  dashboard.classList.add('hidden'); dashboard.classList.remove('platform-only'); $('#exportPdf').classList.remove('hidden'); hero.classList.remove('hidden'); document.body.dataset.view='hero'; hero.scrollIntoView({behavior:'smooth'});
+};
+
 document.querySelectorAll('.dashboard-tab').forEach((button) => {
   const name = button.dataset.tab;
   const panel = document.querySelector(`.analysis-view[data-view="${name}"]`);
@@ -1042,6 +1051,7 @@ function renderConsistency(audit) {
 
 function renderAudit(audit) {
   currentAudit = audit;
+  dashboard.classList.remove('platform-only'); $('#exportPdf').classList.remove('hidden');
   $('#targetName').textContent = new URL(audit.meta.target).hostname;
   $('#auditMeta').textContent = `${audit.meta.id} · ${audit.summary.pagesCrawled} páginas · ${audit.summary.findingsTotal ?? audit.findings.length} hallazgos${audit.summary.payloadTruncated ? ` (mostrando ${audit.summary.findingsReturned} prioritarios)` : ''} · ${new Date(audit.meta.finishedAt).toLocaleString('es-PE')}`;
   applyAuditTabAvailability(audit); renderScores(audit); renderStats(audit); renderConsistency(audit); renderActionPlan(audit); renderSeo(audit); renderHeadings(audit); renderContent(audit); renderUx(audit); renderImages(audit); renderPageSpeed(audit); renderFieldPerformance(audit); renderBrowser(audit); renderCssAnalysis(audit); renderAccessibility(audit); renderTechnologyProfile(audit); renderInfrastructure(audit); renderDomainProfile(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderCoverage(audit); renderOverview(audit);
@@ -1092,7 +1102,7 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.18.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.19.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
@@ -1708,7 +1718,7 @@ form.addEventListener('submit', async (event) => {
 });
 
 $('#severityFilter').addEventListener('change', () => currentAudit && renderFindings(currentAudit));
-$('#newAudit').addEventListener('click', () => { stopWorkingTimer(); currentAudit = null; currentLargeJobId = null; currentLargeJobToken = null; $('#jobProgressPanel').hidden = true; view('hero'); $('#url').focus(); });
+$('#newAudit').addEventListener('click', () => { stopWorkingTimer(); currentAudit = null; currentLargeJobId = null; currentLargeJobToken = null; $('#jobProgressPanel').hidden = true; window.CGAuditOpenNew(); $('#url').focus(); });
 $('#retryButton').addEventListener('click', () => { stopWorkingTimer(); view('hero'); });
 $('#exportPdf').addEventListener('click', async () => {
   if (!currentAudit) return;

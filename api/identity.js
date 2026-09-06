@@ -3,6 +3,7 @@ import { inspectSiteIdentity } from '../lib/audit/site-identity.js';
 import { runAudit } from '../lib/audit/engine.js';
 import { requireAuditAccess, requireScopedRateLimit } from '../lib/security/api-access.js';
 import { withApiObservability } from '../lib/observability/api.js';
+import { acquireJobLock, releaseJobLock } from '../lib/jobs/distributed-lock.js';
 
 function clientIdentity(req) {
   const ip = String(req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
@@ -15,8 +16,13 @@ function publicDemoResult(audit) {
     .sort((a,b)=>({critical:4,high:3,medium:2,low:1}[b.severity]||0)-({critical:4,high:3,medium:2,low:1}[a.severity]||0))
     .slice(0,3)
     .map((finding)=>({ ruleId:finding.ruleId, title:finding.title, category:finding.category, severity:finding.severity, recommendation:finding.recommendation || finding.remediation?.summary || '' }));
+  const demoId = `DMO-${crypto.randomUUID().toUpperCase()}`;
+  const expiresAt = new Date(Date.now()+30*60*1000).toISOString();
+  const signingSecret = String(process.env.CYBERGCODE_DEMO_SECRET || process.env.CYBERGCODE_REPORT_SECRET || 'unsigned');
+  const signature = signingSecret === 'unsigned' ? null : crypto.createHmac('sha256',signingSecret).update(`${demoId}:${expiresAt}:${audit?.meta?.target || ''}`).digest('base64url');
   return {
     demo:true,
+    reference:{ id:demoId, expiresAt, signature, serverStorage:'none' },
     expiresInMinutes:30,
     target:audit?.meta?.target || null,
     hostname:(()=>{ try { return new URL(audit?.meta?.target).hostname; } catch { return ''; } })(),
@@ -40,11 +46,17 @@ function publicDemoResult(audit) {
 
 async function handlePublicDemo(req,res) {
   const limit = Math.min(Math.max(Number(process.env.CYBERGCODE_DEMO_RATE_LIMIT)||5,1),20);
-  if (!await requireScopedRateLimit(res,{ scope:'public-demo', identity:clientIdentity(req), cost:1, limit })) return;
+  const identity = clientIdentity(req);
+  if (!await requireScopedRateLimit(res,{ scope:'public-demo', identity, cost:1, limit })) return;
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
   if (!body.url) return res.status(400).json({ error:'Escribe un dominio o una URL pública.' });
-  const audit = await runAudit({ url:body.url, maxPages:1, pageSpeed:false, stableMode:true, aiReview:false, auditMode:'quick', devices:{ mobile:true, desktop:false } });
-  return res.status(200).json(publicDemoResult(audit));
+  const lock = await acquireJobLock(`public-demo:${identity}`,180000);
+  if (!lock.acquired) return res.status(429).json({ error:'Ya existe una demostración en curso para este dispositivo.', code:'DEMO_CONCURRENT_LIMIT' });
+  try {
+    const modules = { seo:true,headings:true,content:true,images:true,ux:true,security:true };
+    const audit = await runAudit({ url:body.url, maxPages:1, pageSpeed:false, stableMode:true, aiReview:false, auditMode:'custom', modules, devices:{ mobile:true, desktop:false } });
+    return res.status(200).json(publicDemoResult(audit));
+  } finally { await releaseJobLock(lock); }
 }
 
 async function handler(req, res) {

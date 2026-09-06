@@ -51,6 +51,17 @@ test('interfaz sin overflow y menús conectados en seis viewports', { timeout:12
       if (visualDir && width === 390) await page.screenshot({ path:path.join(visualDir, 'home-mobile-390.png'), fullPage:true });
       if (visualDir && width === 1440) await page.screenshot({ path:path.join(visualDir, 'home-laptop-1440.png'), fullPage:true });
     }
+    for (const route of ['admin.html','account.html']) {
+      for (const width of [390,1440]) {
+        await page.setViewport({ width,height:900,deviceScaleFactor:1 });
+        await page.goto(`http://127.0.0.1:${app.address().port}/${route}`, { waitUntil:'networkidle0' });
+        const layout = await page.evaluate(()=>({ scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,title:document.title }));
+        assert.match(layout.title,/CYBERGCODE|Administración|Mi cuenta/i);
+        assert.ok(layout.scrollWidth <= layout.clientWidth + 1,`${route} ${width}px: ${layout.scrollWidth} > ${layout.clientWidth}`);
+        if (visualDir && width === 1440) await page.screenshot({ path:path.join(visualDir,`${route.replace('.html','')}-laptop-1440.png`),fullPage:true });
+      }
+    }
+    await page.goto(`http://127.0.0.1:${app.address().port}/`, { waitUntil:'networkidle0' });
     const menuResult = await page.evaluate(async () => {
       document.body.dataset.view = 'dashboard';
       document.querySelector('#dashboard')?.classList.remove('hidden');

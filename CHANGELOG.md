@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.19.0 — administración, perfil y límites
+
+- Añade una consola responsive en `/admin` para usuarios, organizaciones, roles, suscripciones manuales, límites, suspensiones y activaciones.
+- Añade `/account` con perfil, plan, periodo, renovación y consumo; las operaciones de pago se muestran deshabilitadas hasta integrar una pasarela real.
+- Añade revocación de sesiones mediante una fecha de validez administrada en servidor.
+- Añade trazabilidad SQL de invitaciones, cambios de cuenta, reenvíos y revocaciones.
+- Aplica estado de suscripción y cuota antes de iniciar auditorías de analistas; los administradores conservan acceso operativo.
+- Refuerza la demostración con límite concurrente por dispositivo, módulos económicos, referencia temporal firmada y cero persistencia.
+- Amplía el sitio público con Características, Cómo funciona y Seguridad y privacidad.
+
 ## v0.18.0 — portal público, cuentas privadas y aislamiento por organización
 
 - Separa una demostración pública limitada de la plataforma completa autenticada.

@@ -8,6 +8,7 @@ import {
   refreshSession,
   requestAccessToken,
   requestRefreshToken,
+  resendActivation,
   resolveRequestUser,
   requireSameOrigin,
   requireUser,
@@ -19,6 +20,7 @@ import {
   validatePassword
 } from '../lib/auth/supabase.js';
 import { requireScopedRateLimit } from '../lib/security/api-access.js';
+import { listAdminEvents, recordAdminEvent } from '../lib/platform/admin-events.js';
 import { withApiObservability } from '../lib/observability/api.js';
 
 function bodyOf(req) { return typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {}); }
@@ -27,6 +29,9 @@ function baseOrigin(req) {
   const proto = String(req.headers?.['x-forwarded-proto'] || 'https').split(',')[0].trim();
   const host = String(req.headers?.['x-forwarded-host'] || req.headers?.host || '').split(',')[0].trim();
   return `${proto}://${host}`;
+}
+async function logAdmin(actor, action, targetUserId, organizationId, details = {}) {
+  return recordAdminEvent({ actor,action,targetUserId,organizationId,details }).catch((error)=>({ stored:false,reason:String(error?.message || error) }));
 }
 
 async function handler(req, res) {
@@ -90,14 +95,32 @@ async function handler(req, res) {
       const email = String(body.email || '').trim().toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error:'Correo inválido.' });
       const invited = await inviteAuthUser({ email, role:body.role, organizationId:body.organizationId, redirectTo:`${baseOrigin(req)}/?activate=1` });
-      return res.status(201).json({ user:invited });
+      const event = await logAdmin(user,'user.invited',invited.id,invited.organizationId,{ email,role:invited.role });
+      return res.status(201).json({ user:invited, eventStored:event.stored });
     }
     if (action === 'user' && req.method === 'PATCH') {
       const user = await requireUser(req,res,{ roles:['admin'] }); if (!user) return;
       const body = bodyOf(req);
       if (!body.id) return res.status(400).json({ error:'Falta el usuario.' });
       if (body.id === user.id && body.disabled === true) return res.status(409).json({ error:'No puedes suspender tu propia sesión administrativa.' });
-      return res.status(200).json({ user:await updateAuthUser(body.id,body) });
+      const updated = await updateAuthUser(body.id,body);
+      const event = await logAdmin(user,'user.updated',body.id,updated.organizationId,{
+        role:body.role || null, organizationChanged:Boolean(body.organizationId), disabled:body.disabled,
+        subscriptionChanged:Boolean(body.subscription), sessionsRevoked:Boolean(body.revokeSessions)
+      });
+      return res.status(200).json({ user:updated, eventStored:event.stored });
+    }
+    if (action === 'resend' && req.method === 'POST') {
+      const user = await requireUser(req,res,{ roles:['admin'] }); if (!user) return;
+      const body = bodyOf(req); const email = String(body.email || '').trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error:'Correo inválido.' });
+      await resendActivation(email,`${baseOrigin(req)}/?activate=1`);
+      const event = await logAdmin(user,'user.activation-resent',body.id || null,body.organizationId || null,{ email });
+      return res.status(200).json({ sent:true,eventStored:event.stored });
+    }
+    if (action === 'events' && req.method === 'GET') {
+      const user = await requireUser(req,res,{ roles:['admin'] }); if (!user) return;
+      return res.status(200).json(await listAdminEvents({ limit:req.query?.limit }));
     }
     return res.status(405).json({ error:'Operación de autenticación no permitida.' });
   } catch (error) {

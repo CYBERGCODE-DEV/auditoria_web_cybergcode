@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.18.0
+# CYBERGCODE Web Audit Intelligence v0.19.0
 
 Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
 
@@ -21,6 +21,15 @@ La autenticación usa Supabase Auth en el servidor. Los tokens se guardan en coo
 6. Redesplegar. El administrador ya podrá abrir **Usuarios**, asignar una organización existente o dejarla vacía para crear un espacio aislado.
 
 Nunca se debe colocar `SUPABASE_SERVICE_ROLE_KEY` en `public/`, GitHub, `VITE_*` o `NEXT_PUBLIC_*`.
+
+### Rutas de la plataforma
+
+- `/`: sitio público y demostración limitada.
+- `/app`: aplicación privada de auditorías, proyectos, histórico, comparación e informes.
+- `/account`: perfil, estado de la suscripción, cuota y seguridad del usuario.
+- `/admin`: usuarios, organizaciones, roles, concesiones manuales, límites, suspensiones y trazabilidad.
+
+La consola administrativa puede asignar planes manuales y periodos, pero no declara pagos aprobados. El método de pago, cancelación automática, comprobantes y eventos financieros permanecen bloqueados hasta conectar una pasarela y Nubefact.
 
 ## Principio de integridad
 
@@ -232,6 +241,8 @@ SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 CYBERGCODE_ADMIN_EMAILS=administrador@empresa.com
 CYBERGCODE_DEMO_RATE_LIMIT=5
+CYBERGCODE_DEMO_SECRET=
+CYBERGCODE_ENFORCE_SUBSCRIPTIONS=1
 
 # Fallback legado: solo se usa si Supabase no está configurado
 CYBERGCODE_AUDIT_KEY=
@@ -258,7 +269,7 @@ CYBERGCODE_PLATFORM_KEY=
 
 Con Supabase configurado, las sesiones y roles protegen el scanner y la plataforma; `CYBERGCODE_AUDIT_KEY` y `CYBERGCODE_PLATFORM_KEY` permanecen únicamente como compatibilidad local/legada. Sin Supabase, en producción `CYBERGCODE_AUDIT_KEY` vuelve a ser obligatoria y debe tener al menos 32 caracteres. `CYBERGCODE_REPORT_SECRET` siempre es obligatorio para exportar PDF firmados y debe ser largo, aleatorio y diferente de las demás claves. La persistencia anónima permanece desactivada.
 
-Para guardar proyectos e históricos todavía se necesita una base SQL compatible. En una instalación existente se debe aplicar una sola vez `migrations/mysql/002_multiuser.sql` o `migrations/postgres/002_multiuser.sql`, según el proveedor. La autenticación funciona sin SQL, pero el histórico se mostrará como no disponible y no se inventará persistencia.
+Para guardar proyectos, históricos y trazabilidad administrativa todavía se necesita una base SQL compatible. En una instalación existente se debe aplicar `002_multiuser.sql` y luego `003_admin_events.sql` del proveedor correspondiente. La autenticación funciona sin SQL, pero el histórico y el registro administrativo se mostrarán como no disponibles; no se inventará persistencia.
 
 Límites operativos verificables: cuando existe una base SQL, el rate limiting y los locks de jobs usan tablas compartidas y actualizaciones atómicas; sin base de datos se declara y utiliza un fallback por instancia. Chromium navega mediante un proxy local que valida DNS y fija una IP pública para cada conexión HTTP/HTTPS, además de la validación por solicitud.
 
@@ -280,7 +291,7 @@ El navegador debe permanecer abierto durante el procesamiento. Si se interrumpe,
 
 1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
 2. Hacer push a la rama conectada a Vercel.
-3. Confirmar **ENGINE 0.18.0** y perfil **CG-STABLE-6**.
+3. Confirmar **ENGINE 0.19.0** y perfil **CG-STABLE-6**.
 4. Probar primero 12–25 páginas.
 5. Probar después 100 páginas y verificar el panel de progreso por lotes.
 6. Recargar durante un job y confirmar que aparece **Reanudar**.

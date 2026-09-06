@@ -27,6 +27,14 @@ test('la política de contraseña exige longitud y diversidad', () => {
   assert.equal(validatePassword('Segura-2026!Clave'),'');
 });
 
+test('normaliza el plan y calcula la cuota visible sin confiar en user_metadata', () => {
+  const user = publicUser({ id:'quota-user',email:'quota@example.com',app_metadata:{ plan:'monthly',billing_period:'monthly',subscription_status:'active',audit_limit:20,audit_used:7,bonus_days:3 },user_metadata:{ audit_limit:9999 } });
+  assert.equal(user.subscription.plan,'monthly');
+  assert.equal(user.subscription.auditLimit,20);
+  assert.equal(user.subscription.auditRemaining,13);
+  assert.equal(user.subscription.bonusDays,3);
+});
+
 test('un token de job no permite cruzar de usuario u organización', async () => {
   const token = 'token-de-prueba-muy-largo';
   const id = `JOB-AUTH-${Date.now()}`;

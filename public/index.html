@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#061427">
   <title>CYBERGCODE Web Audit Intelligence</title>
   <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, seguridad, accesibilidad, ISO, infraestructura y cumplimiento desde una sola URL.">
-  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.18.0" type="image/png">
-  <script src="/js/theme.js?v=0.18.0"></script>
-  <link rel="stylesheet" href="/css/app.css?v=0.18.0">
+  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.19.0" type="image/png">
+  <script src="/js/theme.js?v=0.19.0"></script>
+  <link rel="stylesheet" href="/css/app.css?v=0.19.0">
 </head>
 <body data-view="hero">
   <div class="ambient ambient-a" aria-hidden="true"></div>
@@ -18,23 +18,26 @@
     <div class="app-column">
       <header class="topbar">
         <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
-          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.18.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.18.0" alt=""></span>
+          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.19.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.19.0" alt=""></span>
           <span class="brand-copy"><strong>CYBERG<span>CODE</span></strong><small>WEB AUDIT INTELLIGENCE</small></span>
         </a>
+        <nav id="publicNav" class="public-nav"><a href="#features">Características</a><a href="#how">Cómo funciona</a><a href="#privacy">Seguridad y privacidad</a></nav>
         <div class="top-actions">
           <span class="real-data-badge"><i></i>Datos reales · sin simulación</span>
           <span id="platformDbBadge" class="platform-db-badge" title="Estado de persistencia"><i></i><span>Histórico</span></span>
           <span id="sessionUser" class="session-user hidden"></span>
+          <nav id="workspaceNav" class="workspace-nav hidden"><button type="button" data-workspace="new">Nueva auditoría</button><button type="button" data-workspace="project">Proyectos</button><button type="button" data-workspace="history">Historial</button><button type="button" data-workspace="compare">Comparar</button></nav>
           <button id="adminOpen" class="session-action hidden" type="button">Administrar</button>
+          <a id="profileOpen" class="session-action hidden" href="/account">Mi cuenta</a>
           <button id="loginOpen" class="session-action" type="button">Iniciar sesión</button>
           <button id="logoutButton" class="session-action hidden" type="button">Salir</button>
           <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema"><span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span></button>
-          <div class="version">ENGINE 0.18.0</div>
+          <div class="version">ENGINE 0.19.0</div>
         </div>
       </header>
 
       <main id="publicPortal" class="public-portal">
-        <section class="public-hero">
+        <section id="features" class="public-hero">
           <div class="public-hero-copy">
             <p class="eyebrow">AUDITORÍA WEB BASADA EN EVIDENCIA</p>
             <h1>Detecta qué frena tu sitio antes de decidir qué corregir.</h1>
@@ -60,10 +63,11 @@
         <section id="demoProgress" class="demo-progress hidden" aria-live="polite"><i></i><div><strong>Analizando señales públicas</strong><span>El resumen aparecerá cuando el servidor termine la revisión.</span></div></section>
         <section id="demoResult" class="demo-result hidden" aria-live="polite"></section>
 
-        <section class="public-how">
+        <section id="how" class="public-how">
           <div><p class="eyebrow">CÓMO FUNCIONA</p><h2>Del dominio a una decisión concreta.</h2></div>
           <ol><li><b>Introduce la URL</b><span>Solo inspeccionamos recursos públicamente disponibles.</span></li><li><b>Contrastamos señales</b><span>HTTP, SEO, contenido, imágenes, experiencia y seguridad pasiva.</span></li><li><b>Prioriza mejoras</b><span>Los usuarios autorizados reciben evidencia, historial, comparaciones y PDF.</span></li></ol>
         </section>
+        <section id="privacy" class="public-trust"><div><p class="eyebrow">SEGURIDAD Y PRIVACIDAD</p><h2>Revisamos la superficie pública, no tus credenciales.</h2></div><div class="public-trust-grid"><article><b>Protección SSRF</b><p>Se rechazan redes privadas, hosts locales, credenciales embebidas y protocolos no permitidos.</p></article><article><b>Demostración limitada</b><p>Una página, cuota por servidor, sin PDF, comparación ni persistencia histórica.</p></article><article><b>Espacios aislados</b><p>Los proyectos, jobs e informes privados quedan vinculados a la organización autenticada.</p></article></div></section>
       </main>
 
       <main id="privateApp" hidden>
@@ -162,7 +166,7 @@
             <div class="working-wave working-wave-b" aria-hidden="true"></div>
 
             <div class="working-side working-left">
-              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.18.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
+              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.19.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
               <p class="working-kicker">AUDITORÍA EN PROCESO</p>
               <h2>Analizando<br><span id="workingDomain">—</span></h2>
               <p id="workingActivity">Preparando una conexión segura con el dominio.</p>
@@ -461,22 +465,10 @@
         </form>
       </dialog>
 
-      <dialog id="adminDialog" class="admin-dialog">
-        <div class="admin-dialog-head"><div><p class="eyebrow">ADMINISTRACIÓN</p><h2>Usuarios autorizados</h2></div><button id="adminClose" class="dialog-close" type="button" aria-label="Cerrar">×</button></div>
-        <form id="inviteForm" class="invite-form">
-          <label>Correo<input id="inviteEmail" type="email" required></label>
-          <label>Rol<select id="inviteRole"><option value="analyst">Analista</option><option value="reader">Lector</option></select></label>
-          <label>Organización<input id="inviteOrganization" type="text" placeholder="Vacío = espacio nuevo"></label>
-          <button class="primary-action" type="submit">Enviar invitación</button>
-          <span id="inviteMessage" class="form-message" aria-live="polite"></span>
-        </form>
-        <div id="adminUsers" class="admin-users"></div>
-      </dialog>
-
       <footer><span>CYBERGCODE WEB AUDIT INTELLIGENCE</span><span>DIAGNÓSTICO BASADO EN EVIDENCIA PÚBLICA</span></footer>
     </div>
   </div>
-  <script type="module" src="/js/auth.js?v=0.18.0"></script>
-  <script type="module" src="/js/app.js?v=0.18.0"></script>
+  <script type="module" src="/js/auth.js?v=0.19.0"></script>
+  <script type="module" src="/js/app.js?v=0.19.0"></script>
 </body>
 </html>

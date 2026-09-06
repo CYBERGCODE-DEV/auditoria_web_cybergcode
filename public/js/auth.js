@@ -21,7 +21,10 @@ function applySession(next) {
   $('#logoutButton').classList.toggle('hidden',!authenticated);
   $('#sessionUser').classList.toggle('hidden',!authenticated);
   $('#adminOpen').classList.toggle('hidden',!session.user?.isAdmin);
+  $('#profileOpen').classList.toggle('hidden',!authenticated);
+  $('#publicNav').classList.toggle('hidden',authenticated);
   $('#platformDbBadge')?.classList.toggle('hidden',!authenticated);
+  $('#workspaceNav')?.classList.toggle('hidden',!authenticated);
   if (authenticated) {
     $('#sessionUser').textContent = session.user.name || session.user.email;
     document.body.dataset.authenticated = 'true';
@@ -91,24 +94,13 @@ $('#logoutButton')?.addEventListener('click',async()=>{
   history.replaceState(null,'',location.pathname); location.reload();
 });
 
-async function loadAdminUsers() {
-  $('#adminUsers').innerHTML = '<p class="muted">Cargando usuarios…</p>';
-  try {
-    const data = await jsonFetch('/api/auth?action=users');
-    $('#adminUsers').innerHTML = (data.users || []).map((user)=>`<article><div><strong>${escapeHtml(user.name || user.email)}</strong><span>${escapeHtml(user.email)}</span><small>${escapeHtml(user.role)} · ${user.emailConfirmed?'correo confirmado':'pendiente de confirmar'}</small></div><code>${escapeHtml(user.organizationId)}</code></article>`).join('') || '<p class="muted">No hay usuarios.</p>';
-  } catch (error) { $('#adminUsers').innerHTML = `<p class="form-message">${escapeHtml(error.message)}</p>`; }
-}
+document.querySelectorAll('[data-workspace]').forEach((button)=>button.addEventListener('click',()=>{
+  const target=button.dataset.workspace;
+  if(target==='new'){ window.CGAuditOpenNew?.(); return; }
+  window.CGAuditOpenPlatform?.(target);
+}));
 
-$('#adminOpen')?.addEventListener('click',()=>{ $('#adminDialog').showModal(); loadAdminUsers(); });
-$('#adminClose')?.addEventListener('click',()=>$('#adminDialog').close());
-$('#inviteForm')?.addEventListener('submit',async(event)=>{
-  event.preventDefault(); const button=event.currentTarget.querySelector('button'); button.disabled=true; $('#inviteMessage').textContent='Enviando…';
-  try {
-    await jsonFetch('/api/auth?action=invite',{ method:'POST',body:JSON.stringify({ email:$('#inviteEmail').value,role:$('#inviteRole').value,organizationId:$('#inviteOrganization').value.trim() || undefined }) });
-    $('#inviteMessage').textContent='Invitación enviada.'; event.currentTarget.reset(); await loadAdminUsers();
-  } catch(error) { $('#inviteMessage').textContent=error.message; }
-  finally { button.disabled=false; }
-});
+$('#adminOpen')?.addEventListener('click',()=>{ location.href='/admin'; });
 
 $('#activationForm')?.addEventListener('submit',async(event)=>{
   event.preventDefault(); const button=event.currentTarget.querySelector('button'); button.disabled=true; $('#activationMessage').textContent='Guardando…';
