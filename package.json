@@ -21,7 +21,6 @@
     "axe-core": "4.13.0",
     "@vercel/functions": "3.9.5",
     "@sparticuz/chromium": "149.0.0",
-    "@vercel/queue": "0.5.0",
     "@neondatabase/serverless": "1.1.0",
     "mysql2": "3.24.3"
   }

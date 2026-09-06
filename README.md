@@ -36,11 +36,11 @@ consolidación del mismo JSON
 Dashboard + PDF
 ```
 
-En Vercel, el job se publica en **Vercel Queues** y un consumer privado procesa los lotes y la consolidación. El navegador ya no necesita permanecer abierto para que la cola siga avanzando. Si Queues no está disponible, el sistema conserva automáticamente el flujo client-driven anterior como fallback explícito.
+En Vercel, los endpoints de jobs procesan y consolidan la auditoría por lotes. El navegador coordina el avance, muestra el progreso real y debe permanecer abierto hasta finalizar; el estado permite reanudar mientras conserve su vigencia.
 
 ## Persistencia temporal del job
 
-La V0.14 utiliza **Vercel Runtime Cache** para el estado temporal del job y **Vercel Queues** para la orquestación autónoma cuando está disponible. En desarrollo local se conserva un fallback de memoria y ejecución desde el cliente.
+El sistema utiliza **Vercel Runtime Cache** para el estado temporal del job. En desarrollo local conserva un fallback de memoria; tanto en Vercel como en local, la ejecución por lotes se coordina desde el cliente.
 
 - TTL del job: **12 horas**.
 - Estado, lotes y resultado se almacenan por claves independientes.
@@ -148,8 +148,8 @@ GET  /api/jobs/status?id=...
 GET  /api/jobs/result?id=...
 GET  /api/jobs/page?id=...&url=...
 
-QUEUE PRIVADA
-api/queues/large-audit.js  ← trigger queue/v2beta
+ENDPOINT DE COMPATIBILIDAD
+api/queues/large-audit.js  ← responde 410; no ejecuta trabajo
 ```
 
 La Function directa:
@@ -205,7 +205,6 @@ OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5.6-luna
 CHROME_EXECUTABLE_PATH=
 CHROMIUM_PACK_URL=
-CYBERGCODE_QUEUE_DISABLED=0
 CYBERGCODE_AUDIT_KEY=
 CYBERGCODE_RATE_LIMIT=30
 CYBERGCODE_REPORT_SECRET=
@@ -238,11 +237,11 @@ npm run check
 npx vercel dev
 ```
 
-## Vercel Queues para auditorías grandes
+## Auditorías grandes compatibles con Vercel
 
-La V0.15 conserva orquestación autónoma para auditorías de 100–500 páginas. Vercel Queues es la ruta principal cuando el deployment dispone del servicio; la cola utiliza entrega durable y reintentos. El consumer está configurado en `vercel.json` como trigger `queue/v2beta` y el frontend solo consulta el estado.
+Las auditorías de 100–500 páginas usan `/api/jobs/*` por lotes y almacenan su progreso temporal. No existe un trigger experimental en `vercel.json`, lo que mantiene el deployment compatible con el flujo normal de Vercel Functions.
 
-En local o si la cola no está disponible, el mismo motor cae a modo cliente sin inventar progreso ni perder el estado del job.
+El navegador debe permanecer abierto durante el procesamiento. Si se interrumpe, la interfaz puede reanudar un job vigente sin inventar progreso ni perder los lotes ya guardados.
 
 ## Despliegue GitHub → Vercel
 
@@ -255,11 +254,11 @@ En local o si la cola no está disponible, el mismo motor cae a modo cliente sin
 7. Abrir la pestaña **Cobertura** y comprobar los grupos/representantes.
 8. Confirmar que una auditoría >50 páginas usa `/api/jobs/*` y no `/api/audit` directamente.
 
-## Procesamiento autónomo
+## Procesamiento por lotes
 
-- En Vercel, las auditorías de más de 50 páginas intentan publicarse en el topic `cybergcode-large-audit` mediante **Vercel Queues**.
-- El consumer privado `api/queues/large-audit.js` procesa lotes y consolida el informe sin depender de que el navegador permanezca abierto.
-- Si Queues no está disponible o se desactiva con `CYBERGCODE_QUEUE_DISABLED=1`, el frontend conserva automáticamente el modo client-driven anterior.
+- En Vercel, las auditorías de más de 50 páginas se procesan mediante `/api/jobs/*`.
+- El frontend solicita cada lote, consulta el estado real y ordena la consolidación; el navegador debe permanecer abierto.
+- `api/queues/large-audit.js` se conserva solo como respuesta 410 para llamadas antiguas y no forma parte de la orquestación.
 - El estado temporal del job se mantiene en Runtime Cache durante hasta 12 horas y registra eventos, reintentos y fase de ejecución.
 - Los lotes tienen reintentos controlados y la consolidación dispone de su propio contador de recuperación.
 - Los grupos de plantillas son heurísticos; Chromium representativo usa una muestra pequeña para controlar coste/tiempo.

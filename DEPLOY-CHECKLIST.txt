@@ -40,7 +40,7 @@ VALIDACIÓN
 18. Ejecutar una auditoría de 12–25 páginas.
 19. Ejecutar otra del mismo dominio y revisar Historial.
 20. Abrir Comparar y verificar Antes vs Después.
-21. Probar una auditoría de 100 páginas para validar Queue + persistencia al finalizar.
+21. Probar una auditoría de 100 páginas manteniendo el navegador abierto para validar lotes + persistencia al finalizar.
 22. Exportar PDF.
 23. Intentar exportar un resultado modificado y confirmar rechazo de firma.
 24. Confirmar 401 con una CYBERGCODE_AUDIT_KEY incorrecta y 429 al superar la cuota.
@@ -56,5 +56,5 @@ SEGURIDAD
 - Mantén DB_POOL_LIMIT bajo (por defecto 3) en serverless.
 - Usa TLS cuando el proveedor lo soporte/requiera.
 
-FALLBACK QUEUE
-Si Queues causa un problema temporal, definir CYBERGCODE_QUEUE_DISABLED=1 y redeploy.
+MODO DE AUDITORÍAS GRANDES
+No se usa Vercel Queues. Mantener el navegador abierto mientras `/api/jobs/*` procesa los lotes; un job vigente puede reanudarse desde la interfaz.

@@ -4,7 +4,7 @@
 
 - Paquete de producción limpiado: eliminadas suites/fixtures de `test/`, scripts de pruebas y el generador Chromium heredado que ya no intervenía en Vercel.
 - Retirada la dependencia de desarrollo directa `tar-fs`; `axe-core` se conserva porque forma parte del analizador real de accesibilidad.
-- Consumidor de Vercel Queues corregido para Functions Node planas mediante `QueueClient.handleNodeCallback` y exportación `default`.
+- Retirado el trigger experimental de Vercel Queues que impedía registrar los outputs del deployment; las auditorías grandes conservan el flujo compatible por lotes desde el cliente.
 - Portada compacta y adaptable desde 280 px hasta pantallas amplias.
 - Encabezado móvil en una sola fila, controles táctiles de 44 px y prevención de zoom de formularios en iOS.
 - Opciones de auditoría reorganizadas en rejilla y contraseña a ancho completo en móvil.
