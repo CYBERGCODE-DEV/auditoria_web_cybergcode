@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.17.0
+# CYBERGCODE Web Audit Intelligence v0.17.1
 
 Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
 
@@ -249,7 +249,7 @@ El navegador debe permanecer abierto durante el procesamiento. Si se interrumpe,
 
 1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
 2. Hacer push a la rama conectada a Vercel.
-3. Confirmar **ENGINE 0.17.0** y perfil **CG-STABLE-6**.
+3. Confirmar **ENGINE 0.17.1** y perfil **CG-STABLE-6**.
 4. Probar primero 12–25 páginas.
 5. Probar después 100 páginas y verificar el panel de progreso por lotes.
 6. Recargar durante un job y confirmar que aparece **Reanudar**.

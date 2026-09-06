@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#061427">
   <title>CYBERGCODE Web Audit Intelligence</title>
   <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, seguridad, accesibilidad, ISO, infraestructura y cumplimiento desde una sola URL.">
-  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.17.0" type="image/png">
-  <script src="/js/theme.js?v=0.17.0"></script>
-  <link rel="stylesheet" href="/css/app.css?v=0.17.0">
+  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.17.1" type="image/png">
+  <script src="/js/theme.js?v=0.17.1"></script>
+  <link rel="stylesheet" href="/css/app.css?v=0.17.1">
 </head>
 <body data-view="hero">
   <div class="ambient ambient-a" aria-hidden="true"></div>
@@ -18,26 +18,43 @@
     <div class="app-column">
       <header class="topbar">
         <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
-          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.17.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.17.0" alt=""></span>
+          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.17.1" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.17.1" alt=""></span>
           <span class="brand-copy"><strong>CYBERG<span>CODE</span></strong><small>WEB AUDIT INTELLIGENCE</small></span>
         </a>
         <div class="top-actions">
           <span class="real-data-badge"><i></i>Datos reales · sin simulación</span>
           <span id="platformDbBadge" class="platform-db-badge" title="Estado de persistencia"><i></i><span>Histórico</span></span>
           <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema"><span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span></button>
-          <div class="version">ENGINE 0.17.0</div>
+          <div class="version">ENGINE 0.17.1</div>
         </div>
       </header>
 
       <main>
         <section class="hero" id="hero">
-          <div class="hero-copy reveal">
-            <div class="eyebrow">AUDITORÍA WEB INTELIGENTE · EVIDENCIA REAL</div>
-            <h1>Una URL.<br><span>Un diagnóstico accionable.</span></h1>
-            <p class="lead">Rastreo, SEO, H1–H6, DOM renderizado, imágenes, rendimiento, accesibilidad, seguridad, infraestructura, cumplimiento e ISO Readiness. Cada observación explica qué se detectó, cómo corregirlo y cuándo puede considerarse cerrada.</p>
+          <div class="hero-layout">
+            <div class="hero-copy reveal">
+              <div class="eyebrow">INTELIGENCIA PARA MEJORAR SITIOS WEB</div>
+              <h1>Convierte una URL en un <span>plan de mejora claro.</span></h1>
+              <p class="lead">Analizamos las señales públicas de tu sitio y organizamos los resultados por impacto. Recibes evidencia verificable, prioridades y recomendaciones concretas para decidir qué corregir primero.</p>
+              <div class="hero-outcomes" aria-label="Resultados de la auditoría">
+                <span><i>01</i><b>Diagnóstico integral</b><small>SEO, rendimiento, accesibilidad, seguridad y experiencia.</small></span>
+                <span><i>02</i><b>Evidencia trazable</b><small>Cada resultado indica qué pudo medirse y qué fuente se utilizó.</small></span>
+                <span><i>03</i><b>Plan priorizado</b><small>Acciones ordenadas por impacto, esfuerzo y criterio de cierre.</small></span>
+              </div>
+            </div>
+            <aside class="hero-process reveal" aria-label="Cómo funciona">
+              <span class="hero-process-label">CÓMO FUNCIONA</span>
+              <ol>
+                <li><b>Ingresa el dominio</b><small>Solo necesitamos una URL pública.</small></li>
+                <li><b>Ejecutamos las verificaciones</b><small>El sistema rastrea, renderiza y contrasta las señales disponibles.</small></li>
+                <li><b>Revisa el informe</b><small>Explora resultados, evidencia y mejoras recomendadas.</small></li>
+              </ol>
+              <p><strong>No compartas accesos del sitio.</strong> La auditoría no solicita usuarios, contraseñas ni información privada del dominio analizado.</p>
+            </aside>
           </div>
 
-          <form id="auditForm" class="audit-form" aria-describedby="stabilityHelp">
+          <form id="auditForm" class="audit-form audit-launch-panel" aria-describedby="stabilityHelp">
+            <div class="audit-launch-head"><div><span>NUEVA AUDITORÍA</span><h2>¿Qué sitio quieres analizar?</h2></div><p>Escribe el dominio completo o una URL pública.</p></div>
             <label for="url" class="sr-only">Dominio o URL</label>
             <div class="input-wrap">
               <span class="protocol">HTTPS</span>
@@ -70,30 +87,34 @@
                 <label><input type="checkbox" data-module="iso" checked> ISO Readiness</label>
               </div>
             </div>
-            <div class="form-options">
-              <label>Páginas <select id="maxPages" aria-label="Máximo de páginas"><option>5</option><option>12</option><option selected>25</option><option>50</option><option>100</option><option>250</option><option>500</option></select></label>
-              <label class="check"><input id="deviceMobile" type="checkbox" checked> Móvil</label>
-              <label class="check"><input id="deviceDesktop" type="checkbox" checked> Escritorio</label>
-              <label class="check"><input id="pageSpeed" type="checkbox" checked> PageSpeed / Lighthouse</label>
-              <label class="check stability-check"><input id="stableMode" type="checkbox" checked> Modo estable</label>
-              <label class="check"><input id="aiReview" type="checkbox"> Revisión IA opcional</label>
-              <label>Clave de auditoría <input id="auditAccessKey" type="password" autocomplete="current-password" placeholder="Opcional si el servidor es público"></label>
-              <span class="secure-label">Seguridad pasiva · SSRF Guard</span>
-            </div>
+            <details class="audit-advanced">
+              <summary><span><b>Configuración avanzada</b><small>Páginas, dispositivos, fuentes opcionales y acceso autorizado</small></span><i aria-hidden="true">+</i></summary>
+              <div class="form-options">
+                <label>Páginas <select id="maxPages" aria-label="Máximo de páginas"><option>5</option><option>12</option><option selected>25</option><option>50</option><option>100</option><option>250</option><option>500</option></select></label>
+                <label class="check"><input id="deviceMobile" type="checkbox" checked> Móvil</label>
+                <label class="check"><input id="deviceDesktop" type="checkbox" checked> Escritorio</label>
+                <label class="check"><input id="pageSpeed" type="checkbox" checked> PageSpeed / Lighthouse</label>
+                <label class="check stability-check"><input id="stableMode" type="checkbox" checked> Modo estable</label>
+                <label class="check"><input id="aiReview" type="checkbox"> Revisión IA opcional</label>
+                <label>Clave de auditoría <input id="auditAccessKey" type="password" autocomplete="current-password" placeholder="Clave autorizada del servicio"></label>
+                <span class="secure-label">La clave se conserva únicamente durante esta sesión.</span>
+              </div>
+            </details>
             <p id="largeAuditHint" class="large-audit-hint" hidden><strong>Auditoría grande:</strong> más de 50 páginas se procesan por lotes persistentes. SEO/HTML se rastrean en todas las páginas procesadas y Chromium usa una muestra representativa de plantillas.</p>
             <p id="stabilityHelp" class="stability-help"><strong>Modo estable:</strong> perfil fijo, rastreo determinista, mediana de PageSpeed cuando se selecciona y caché compartida para reducir variaciones entre dispositivos.</p>
             <div id="resumeJob" class="resume-job hidden"><div><strong>Auditoría grande pendiente</strong><small id="resumeJobText">Se encontró un job temporal que puede continuar.</small></div><div><button type="button" class="mini-action" id="resumeJobButton">Reanudar</button><button type="button" class="mini-action" id="discardJobButton">Descartar</button></div></div>
           </form>
 
+          <div class="scope-head"><span>COBERTURA DEL INFORME</span><h2>Una revisión conectada, no métricas aisladas.</h2><p>Los módulos se relacionan para convertir señales técnicas en decisiones prácticas.</p></div>
           <div class="scope-grid" aria-label="Cobertura del análisis">
-            <article class="scope-card reveal"><i>01</i><strong>HTTP + SEO</strong><span>estado, redirects, title, canonical, robots, sitemap</span></article>
-            <article class="scope-card reveal"><i>02</i><strong>H1–H6 + CONTENIDO</strong><span>jerarquía semántica, palabras, párrafos y duplicados</span></article>
-            <article class="scope-card reveal"><i>03</i><strong>DOM RENDERIZADO</strong><span>Chromium, JavaScript, screenshots, cookies y recursos</span></article>
-            <article class="scope-card reveal"><i>04</i><strong>IMÁGENES + VISUAL</strong><span>ALT, dimensiones, lazy, colores, fuentes y contraste</span></article>
-            <article class="scope-card reveal"><i>05</i><strong>PERFORMANCE</strong><span>PageSpeed / Lighthouse móvil y desktop cuando está disponible</span></article>
-            <article class="scope-card reveal"><i>06</i><strong>SEGURIDAD</strong><span>HTTPS, headers, DNS, TLS, correo y terceros</span></article>
-            <article class="scope-card reveal"><i>07</i><strong>ACCESIBILIDAD + UX/CRO</strong><span>axe-core, formularios, CTAs, fricción y señales de confianza</span></article>
-            <article class="scope-card reveal"><i>08</i><strong>CRUX + ISO + PERÚ</strong><span>datos de campo cuando existen, alineamiento observable y privacidad</span></article>
+            <article class="scope-card"><i>01</i><strong>HTTP + SEO</strong><span>Estado, redirecciones, títulos, canonical, robots y sitemap.</span></article>
+            <article class="scope-card"><i>02</i><strong>ESTRUCTURA + CONTENIDO</strong><span>Jerarquía H1–H6, contenido visible, duplicados y páginas.</span></article>
+            <article class="scope-card"><i>03</i><strong>EXPERIENCIA RENDERIZADA</strong><span>DOM, recursos, capturas, comportamiento responsive e interacción.</span></article>
+            <article class="scope-card"><i>04</i><strong>RENDIMIENTO</strong><span>Laboratorio y datos externos cuando la fuente está disponible.</span></article>
+            <article class="scope-card"><i>05</i><strong>ACCESIBILIDAD</strong><span>Comprobaciones automáticas y puntos que requieren validación manual.</span></article>
+            <article class="scope-card"><i>06</i><strong>SEGURIDAD WEB</strong><span>HTTPS, cabeceras, DNS, TLS, correo y recursos de terceros.</span></article>
+            <article class="scope-card"><i>07</i><strong>TECNOLOGÍA + DOMINIO</strong><span>Tecnologías observables, composición, registro y alojamiento.</span></article>
+            <article class="scope-card"><i>08</i><strong>PLAN DE ACCIÓN</strong><span>Prioridades, esfuerzo estimado, evidencia y criterio de cierre.</span></article>
           </div>
         </section>
 
@@ -104,14 +125,14 @@
             <div class="working-wave working-wave-b" aria-hidden="true"></div>
 
             <div class="working-side working-left">
-              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.17.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
+              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.17.1" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
               <p class="working-kicker">AUDITORÍA EN PROCESO</p>
               <h2>Analizando<br><span id="workingDomain">—</span></h2>
-              <p>Extrayendo y analizando datos reales del sitio en el servidor. La interfaz no inventa porcentajes ni resultados intermedios.</p>
+              <p id="workingActivity">Preparando una conexión segura con el dominio.</p>
               <div class="working-live-list" aria-label="Tareas en ejecución">
-                <div><span class="loader-task-icon" aria-hidden="true">▤</span><span>Conectando y recopilando datos del sitio en tiempo real</span><i></i></div>
-                <div><span class="loader-task-icon" aria-hidden="true">⌕</span><span>Ejecutando verificaciones de auditoría disponibles</span><i></i></div>
-                <div><span class="loader-task-icon" aria-hidden="true">▥</span><span>Consolidando evidencia, métricas y recomendaciones</span><i></i></div>
+                <div id="liveConnection"><span class="loader-task-icon" aria-hidden="true">▤</span><span>Conexión e identidad pública del sitio</span><i></i></div>
+                <div id="liveAnalysis"><span class="loader-task-icon" aria-hidden="true">⌕</span><span>Verificaciones seleccionadas</span><i></i></div>
+                <div id="liveConsolidate"><span class="loader-task-icon" aria-hidden="true">▥</span><span>Consolidación del informe</span><i></i></div>
               </div>
               <blockquote>“Datos reales, decisiones más seguras.”<cite>— CYBERGCODE</cite></blockquote>
             </div>
@@ -130,7 +151,7 @@
                 <div class="orbit-node orbit-n5" data-module="security"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-2.7 7.8-7 10-4.3-2.2-7-5.4-7-10V6l7-3z"></path><path d="M9.5 12.5l1.7 1.7 3.3-3.8"></path></svg></span><b>Seguridad</b><small>Pendiente</small></div>
                 <div class="orbit-node orbit-n6" data-module="peru"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4v16"></path><path d="M17 4v16"></path><path d="M7 4h10"></path><path d="M7 20h10"></path></svg></span><b>Perú</b><small>En cola</small></div>
                 <div class="orbit-node orbit-n7" data-module="iso"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.1 4.2 4.6.7-3.3 3.2.8 4.6-4.2-2.2-4.2 2.2.8-4.6L5.3 7.9l4.6-.7L12 3z"></path></svg></span><b>ISO</b><small>En cola</small></div>
-                <div class="orbit-node orbit-n8" data-module="pdf"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 3.5h6l4 4V20a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"></path><path d="M14 3.5V8h4"></path><path d="M9 14h6"></path><path d="M9 17h4"></path></svg></span><b>PDF</b><small>En cola</small></div>
+                <div class="orbit-node orbit-n8" data-module="report"><span class="orbit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 3.5h6l4 4V20a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"></path><path d="M14 3.5V8h4"></path><path d="M9 14h6"></path><path d="M9 17h4"></path></svg></span><b>Informe</b><small>En espera</small></div>
 
                 <div class="working-site-logo" id="workingSiteLogoWrap">
                   <span class="working-site-logo-glow" aria-hidden="true"></span>
@@ -139,7 +160,7 @@
                 </div>
                 <div class="working-server-state">
                   <strong id="workingElapsed">00:00</strong>
-                  <span>Procesando en servidor</span>
+                  <span id="workingCurrentStatus">Preparando auditoría</span>
                   <span class="loading-dots" aria-hidden="true"><i></i><i></i><i></i></span>
                 </div>
               </div>
@@ -151,7 +172,7 @@
                 <div class="working-step active" id="workingStepConnection"><i></i><span>Conectando al sitio</span></div>
                 <div class="working-step" id="workingStepIdentity"><i></i><span>Detectando identidad visual</span></div>
                 <div class="working-step" id="workingStepAudit"><i></i><span>Analizando estructura, contenido y recursos</span></div>
-                <div class="working-step"><i></i><span>Validando buenas prácticas y seguridad</span></div>
+                <div class="working-step" id="workingStepValidation"><i></i><span>Validando buenas prácticas y seguridad</span></div>
                 <div class="working-step" id="workingStepConsolidate"><i></i><span>Consolidando resultados del informe</span></div>
                 <div class="job-progress-panel" id="jobProgressPanel" hidden>
                   <div><strong id="jobProgressPhase">Rastreo por lotes</strong><span id="jobProgressCount">0 / 0 URLs</span></div>
@@ -173,15 +194,15 @@
             </div>
 
             <div class="working-strip">
-              <span><i>⚙</i><small>Modo estable</small><b>Activo</b></span>
-              <span><i>▤</i><small>Perfil</small><b>CG-STABLE-6</b></span>
-              <span><i>▥</i><small>Región lógica</small><b>America/Lima</b></span>
-              <span><i>◷</i><small>Cache de análisis</small><b>30 min</b></span>
+              <span><i>⚙</i><small>Modalidad</small><b id="workingMode">Completa</b></span>
+              <span><i>▤</i><small>Alcance</small><b id="workingPages">25 páginas</b></span>
+              <span><i>▥</i><small>Dispositivos</small><b id="workingDevices">Móvil + escritorio</b></span>
+              <span><i>◷</i><small>Estado</small><b id="workingStripStatus">Iniciando</b></span>
             </div>
 
             <div class="working-footer">
-              <span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span>
-              <span>CYBERGCODE.COM · LAMBAYEQUE, PERÚ</span>
+              <span>Los estados cambian únicamente cuando el navegador o el servidor confirman un avance.</span>
+              <span>Los módulos no disponibles se identifican en el informe.</span>
             </div>
           </div>
         </section>
@@ -380,9 +401,9 @@
         <section class="error-box hidden" id="errorBox" role="alert"><strong>No se pudo completar la auditoría</strong><p id="errorText"></p><button id="retryButton" class="ghost">Volver</button></section>
       </main>
 
-      <footer><span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span><span>cybergcode.com · Lambayeque, Perú</span></footer>
+      <footer><span>CYBERGCODE WEB AUDIT INTELLIGENCE</span><span>DIAGNÓSTICO BASADO EN EVIDENCIA PÚBLICA</span></footer>
     </div>
   </div>
-  <script type="module" src="/js/app.js?v=0.17.0"></script>
+  <script type="module" src="/js/app.js?v=0.17.1"></script>
 </body>
 </html>

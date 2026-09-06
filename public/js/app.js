@@ -202,6 +202,103 @@ function setWorkingStep(id, state = '') {
   if (state) step.classList.add(state);
 }
 
+const workingModuleMap = {
+  seo:'seo', dom:'renderedDom', images:'images', accessibility:'accessibility',
+  security:'security', peru:'compliancePe', iso:'isoStandards', report:'report'
+};
+
+function setWorkingText(message, status = '') {
+  const activity = $('#workingActivity');
+  const current = $('#workingCurrentStatus');
+  const strip = $('#workingStripStatus');
+  if (activity && message) activity.textContent = message;
+  if (current && status) current.textContent = status;
+  if (strip && status) strip.textContent = status;
+}
+
+function setLiveTask(id, state = '') {
+  const row = $(id);
+  if (!row) return;
+  row.classList.remove('active','done');
+  if (state) row.classList.add(state);
+}
+
+function setOrbitState(module, state = 'pending', label = '') {
+  const node = document.querySelector(`.orbit-node[data-module="${module}"]`);
+  if (!node) return;
+  node.classList.remove('orbit-node-active','orbit-node-done','orbit-node-skipped','orbit-node-unavailable');
+  if (state === 'active') node.classList.add('orbit-node-active');
+  if (state === 'done') node.classList.add('orbit-node-done');
+  if (state === 'skipped') node.classList.add('orbit-node-skipped');
+  if (state === 'unavailable') node.classList.add('orbit-node-unavailable');
+  const text = node.querySelector('small');
+  if (text) text.textContent = label || ({ active:'Procesando', done:'Completado', skipped:'No seleccionado', unavailable:'No disponible', pending:'En espera' }[state] || 'En espera');
+}
+
+function requestedWorkingModules(payload = {}) {
+  if (payload.auditMode === 'quick') return new Set(['seo','images','security']);
+  if (payload.auditMode !== 'custom') return new Set(['seo','dom','images','accessibility','security','peru','iso']);
+  const selected = payload.modules || {};
+  const modules = new Set();
+  if (selected.seo || selected.headings || selected.content || selected.ux) modules.add('seo');
+  if (selected.performance || selected.accessibility || selected.visual) modules.add('dom');
+  if (selected.images) modules.add('images');
+  if (selected.accessibility) modules.add('accessibility');
+  if (selected.security || selected.infrastructure) modules.add('security');
+  if (selected.compliance) modules.add('peru');
+  if (selected.iso) modules.add('iso');
+  return modules;
+}
+
+function resetWorkingProgress(payload = {}) {
+  document.querySelectorAll('.working-step').forEach((step) => step.classList.remove('active','done'));
+  ['#liveConnection','#liveAnalysis','#liveConsolidate'].forEach((id) => setLiveTask(id));
+  Object.keys(workingModuleMap).forEach((module) => setOrbitState(module));
+  setOrbitState('report', 'pending');
+  const modeLabels = { quick:'Rápida', complete:'Completa', custom:'Personalizada' };
+  if ($('#workingMode')) $('#workingMode').textContent = modeLabels[payload.auditMode] || 'Completa';
+  if ($('#workingPages')) $('#workingPages').textContent = `${payload.maxPages || Number($('#maxPages')?.value) || 25} páginas`;
+  const devices = payload.devices || { mobile:$('#deviceMobile')?.checked, desktop:$('#deviceDesktop')?.checked };
+  if ($('#workingDevices')) $('#workingDevices').textContent = devices.mobile && devices.desktop ? 'Móvil + escritorio' : devices.mobile ? 'Móvil' : 'Escritorio';
+}
+
+function beginServerAudit(payload) {
+  const requested = requestedWorkingModules(payload);
+  for (const module of Object.keys(workingModuleMap)) {
+    if (module === 'report') continue;
+    setOrbitState(module, requested.has(module) ? 'active' : 'skipped');
+  }
+  setWorkingStep('#workingStepAudit', 'active');
+  setLiveTask('#liveAnalysis', 'active');
+  setWorkingText('El servidor está ejecutando las verificaciones seleccionadas. Los resultados se mostrarán únicamente cuando hayan sido recibidos.', 'Analizando sitio');
+}
+
+function completeServerAudit(audit) {
+  const measured = new Set(['measured','partial','manual-required']);
+  for (const [module, resultKey] of Object.entries(workingModuleMap)) {
+    if (module === 'report') continue;
+    const status = audit?.modules?.[resultKey];
+    if (status === 'skipped') setOrbitState(module, 'skipped');
+    else if (measured.has(status)) setOrbitState(module, 'done', status === 'partial' ? 'Medición parcial' : 'Completado');
+    else if (status) setOrbitState(module, 'unavailable');
+    else setOrbitState(module, 'done');
+  }
+  setWorkingStep('#workingStepAudit', 'done');
+  setWorkingStep('#workingStepValidation', 'done');
+  setLiveTask('#liveAnalysis', 'done');
+  setWorkingStep('#workingStepConsolidate', 'active');
+  setLiveTask('#liveConsolidate', 'active');
+  setOrbitState('report', 'active', 'Construyendo');
+  setWorkingText('Las verificaciones terminaron. Estamos organizando la evidencia y las prioridades del informe.', 'Consolidando informe');
+}
+
+function completeWorkingReport() {
+  setWorkingStep('#workingStepConsolidate', 'done');
+  setLiveTask('#liveConsolidate', 'done');
+  setOrbitState('report', 'done');
+  setWorkingText('Informe preparado con los resultados recibidos.', 'Completado');
+}
+
 initRevealAnimations();
 window.addEventListener('resize', syncResponsiveTableLabels);
 window.addEventListener('orientationchange', syncResponsiveTableLabels);
@@ -995,13 +1092,14 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.17.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.17.1'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
-function prepareWorkingIdentity(raw) {
+function prepareWorkingIdentity(raw, payload = {}) {
   let host = raw.replace(/^https?:\/\//i,'').split('/')[0] || raw || 'sitio';
   host = host.replace(/^www\./i, '');
+  resetWorkingProgress(payload);
   $('#workingDomain').textContent = host;
   $('#identityHost').textContent = host;
   $('#identitySource').textContent = 'Pendiente';
@@ -1014,8 +1112,8 @@ function prepareWorkingIdentity(raw) {
   status.classList.remove('ready','fallback');
   status.querySelector('span').textContent = 'Buscando logo real del dominio…';
   setWorkingStep('#workingStepConnection', 'active');
-  setWorkingStep('#workingStepIdentity', 'active');
-  setWorkingStep('#workingStepAudit', 'active');
+  setLiveTask('#liveConnection', 'active');
+  setWorkingText('Preparando una conexión segura con el dominio.', 'Conectando');
 }
 
 function visualSourceLabel(visual) {
@@ -1043,6 +1141,7 @@ async function showDetectedSiteLogo(data) {
 }
 
 async function loadSiteIdentity(raw) {
+  setWorkingStep('#workingStepIdentity', 'active');
   try {
     const response = await fetch('/api/identity', { method:'POST', headers:auditAccessHeaders({'content-type':'application/json'}), body:JSON.stringify({ url: raw }) });
     const data = await response.json();
@@ -1058,13 +1157,16 @@ async function loadSiteIdentity(raw) {
     $('#identitySource').textContent = visualSourceLabel(data.visual);
     setWorkingStep('#workingStepConnection', 'done');
     setWorkingStep('#workingStepIdentity', 'done');
+    setLiveTask('#liveConnection', 'done');
     return data;
   } catch (error) {
     const status = $('#identityStatus');
     status.classList.add('fallback');
     status.querySelector('span').textContent = 'No fue posible obtener un logo público de forma segura';
     $('#identitySource').textContent = 'Fallback textual del dominio';
+    setWorkingStep('#workingStepConnection', 'done');
     setWorkingStep('#workingStepIdentity', 'done');
+    setLiveTask('#liveConnection', 'done');
     return null;
   }
 }
@@ -1085,9 +1187,24 @@ function updateLargeJobProgress(job) {
   const retries = Number(job.retryCount || 0) + Number(job.finalizeRetryCount || 0);
   const lastEvent = job.events?.length ? job.events[job.events.length - 1]?.message : '';
   $('#jobProgressDetail').textContent = `Descubiertas: ${job.discoveredCount || 0} · Cola URL: ${job.queueRemaining || 0} · Lotes: ${job.chunkCount || 0} · ${orchestration}${retries ? ` · Reintentos: ${retries}` : ''}${lastEvent ? ` · ${lastEvent}` : ''}.`;
-  if (job.status === 'crawl-complete') { setWorkingStep('#workingStepAudit', 'done'); setWorkingStep('#workingStepConsolidate', 'active'); }
-  if (job.status === 'finalizing') setWorkingStep('#workingStepConsolidate', 'active');
-  if (job.status === 'completed') setWorkingStep('#workingStepConsolidate', 'done');
+  if (job.status === 'crawling') {
+    setOrbitState('seo', 'active', `${processed} URL${processed === 1 ? '' : 's'}`);
+    setWorkingText(`Rastreo confirmado: ${processed} URL${processed === 1 ? '' : 's'} procesada${processed === 1 ? '' : 's'} de un máximo de ${max}.`, 'Rastreando páginas');
+  }
+  if (job.status === 'crawl-complete') {
+    setOrbitState('seo', 'done', `${processed} URL${processed === 1 ? '' : 's'}`);
+    setWorkingStep('#workingStepAudit', 'done');
+    setWorkingStep('#workingStepValidation', 'active');
+    setWorkingText(`El rastreo terminó con ${processed} URL${processed === 1 ? '' : 's'}. El servidor está validando los módulos restantes.`, 'Validando resultados');
+  }
+  if (job.status === 'finalizing') {
+    setWorkingStep('#workingStepValidation', 'active');
+    setWorkingStep('#workingStepConsolidate', 'active');
+    setLiveTask('#liveConsolidate', 'active');
+    setOrbitState('report', 'active', 'Construyendo');
+    setWorkingText('El servidor está consolidando la evidencia obtenida durante el rastreo.', 'Consolidando informe');
+  }
+  if (job.status === 'completed') completeWorkingReport();
 }
 
 const LARGE_JOB_STORAGE_KEY = 'cybergcode:active-large-job';
@@ -1256,6 +1373,8 @@ $('#resumeJobButton')?.addEventListener('click', async (event) => {
   try {
     const ref = readLargeJobReference();
     const result = await runLargeAudit(null, { resumeId:id, resumeTarget:target, resumeToken:ref?.token || null });
+    completeServerAudit(result);
+    completeWorkingReport();
     stopWorkingTimer();
     renderAudit(result);
     view('dashboard');
@@ -1557,15 +1676,15 @@ document.querySelectorAll('[data-jump-tab]').forEach(button => button.addEventLi
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   try { sessionStorage.setItem(AUDIT_KEY_SESSION, $('#auditAccessKey')?.value.trim() || ''); } catch {}
+  const payload = { url:$('#url').value, auditMode:selectedAuditMode(), modules:selectedAuditMode()==='custom'?collectCustomModules():{}, devices:{ mobile:$('#deviceMobile').checked, desktop:$('#deviceDesktop').checked }, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked, aiReview:$('#aiReview')?.checked === true };
   submitButton.disabled = true;
   view('working');
   startWorkingTimer();
   const rawTarget = $('#url').value.trim();
-  prepareWorkingIdentity(rawTarget);
+  prepareWorkingIdentity(rawTarget, payload);
   const identityPromise = loadSiteIdentity(rawTarget);
   try {
-    setWorkingStep('#workingStepAudit', 'active');
-    const payload = { url:$('#url').value, auditMode:selectedAuditMode(), modules:selectedAuditMode()==='custom'?collectCustomModules():{}, devices:{ mobile:$('#deviceMobile').checked, desktop:$('#deviceDesktop').checked }, maxPages:Number($('#maxPages').value), pageSpeed:$('#pageSpeed').checked, stableMode:$('#stableMode').checked, aiReview:$('#aiReview')?.checked === true };
+    beginServerAudit(payload);
     let data;
     if (payload.maxPages > 50) {
       currentCacheState = 'JOB';
@@ -1578,7 +1697,8 @@ form.addEventListener('submit', async (event) => {
       currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
     }
     await identityPromise.catch(() => null);
-    setWorkingStep('#workingStepAudit', 'done');
+    completeServerAudit(data);
+    completeWorkingReport();
     stopWorkingTimer();
     renderAudit(data); view('dashboard');
   } catch (error) {

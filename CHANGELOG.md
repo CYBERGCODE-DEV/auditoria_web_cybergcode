@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.17.1 — inicio profesional y progreso verificable
+
+- Inicio rediseñado para explicar con claridad qué analiza la plataforma, cómo funciona y qué entrega.
+- La configuración sensible queda fuera del mensaje comercial y agrupada como opción avanzada.
+- La pantalla de trabajo conserva composición horizontal en tablets y evita partir dominios largos.
+- Los pasos, módulos y tareas cambian con eventos confirmados del navegador, del job o de la respuesta del servidor.
+- El rastreo por lotes muestra URLs realmente procesadas; no se fabrican porcentajes para auditorías monolíticas.
+
 ## v0.17.0 — calidad, seguridad distribuida y observabilidad
 
 - Restaura pruebas unitarias, integración y E2E responsive en seis viewports, ejecutadas por GitHub Actions.
