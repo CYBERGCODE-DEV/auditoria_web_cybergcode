@@ -1,4 +1,4 @@
-import { handleCallback, send } from '@vercel/queue';
+import { QueueClient, send } from '@vercel/queue';
 import { LARGE_AUDIT_QUEUE_TOPIC, setJobOrchestration } from '../../lib/jobs/queue-orchestrator.js';
 import { finalizeLargeAuditJob, getLargeAuditJobStatus, processLargeAuditJob } from '../../lib/jobs/large-audit.js';
 
@@ -16,7 +16,9 @@ async function sendNext(jobId, step) {
   });
 }
 
-export const POST = handleCallback(async (message, metadata) => {
+const queueClient = new QueueClient();
+
+export default queueClient.handleNodeCallback(async (message, metadata) => {
   const jobId = String(message?.jobId || '').trim();
   const step = message?.step === 'finalize' ? 'finalize' : 'process';
   if (!jobId) throw new Error('Mensaje de cola sin jobId.');
