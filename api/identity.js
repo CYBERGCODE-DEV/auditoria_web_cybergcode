@@ -1,8 +1,10 @@
 import { inspectSiteIdentity } from '../lib/audit/site-identity.js';
+import { requireAuditAccess } from '../lib/security/api-access.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
+  if (!requireAuditAccess(req, res, { scope:'identity', cost:1 })) return;
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     if (!body.url) return res.status(400).json({ error: 'Debes indicar una URL.' });

@@ -3,7 +3,9 @@ import { LARGE_AUDIT_QUEUE_TOPIC, setJobOrchestration } from '../../lib/jobs/que
 import { finalizeLargeAuditJob, getLargeAuditJobStatus, processLargeAuditJob } from '../../lib/jobs/large-audit.js';
 
 async function sendNext(jobId, step) {
-  const response = await send(LARGE_AUDIT_QUEUE_TOPIC, { jobId, step, requestedAt:new Date().toISOString() });
+  const status = await getLargeAuditJobStatus(jobId);
+  const expectedRevision = Number(status?.revision || 0);
+  const response = await send(LARGE_AUDIT_QUEUE_TOPIC, { jobId, step, expectedRevision, requestedAt:new Date().toISOString() }, { idempotencyKey:`${jobId}:${step}:${expectedRevision}` });
   await setJobOrchestration(jobId, {
     mode:'queue',
     status:'queued',
@@ -22,6 +24,7 @@ export const POST = handleCallback(async (message, metadata) => {
   let status = await getLargeAuditJobStatus(jobId);
   if (!status || ['completed','cancelled'].includes(status.status)) return;
   if (status.status === 'failed') throw new Error(status.error || `Job ${jobId} fallido.`);
+  if (Number.isFinite(message?.expectedRevision) && Number(message.expectedRevision) !== Number(status.revision || 0)) return;
 
   await setJobOrchestration(jobId, {
     mode:'queue',
@@ -38,8 +41,8 @@ export const POST = handleCallback(async (message, metadata) => {
     return;
   }
 
-  status = await processLargeAuditJob(jobId);
-  if (status?.busy) return;
+  status = await processLargeAuditJob(jobId, { expectedRevision:Number.isFinite(message?.expectedRevision) ? Number(message.expectedRevision) : null });
+  if (status?.busy || status?.duplicateDelivery) return;
   if (status.status === 'crawling') {
     await sendNext(jobId, 'process');
     return;

@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.15.1
+# CYBERGCODE Web Audit Intelligence v0.16.1
 
 Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
 
@@ -186,6 +186,10 @@ Además de la orquestación autónoma y la nueva capa de plataforma, V0.15 conse
 - responsive y screenshots;
 - seguridad HTTP, cookies, terceros;
 - DNS/TLS/SPF/DMARC/DKIM orientativo/MTA-STS/TLS-RPT;
+- registro RDAP con creación, actualización, vencimiento y días restantes;
+- cadena CNAME, IP RDAP, propietario de red y alojamiento/CDN observable;
+- tecnologías detectadas con confianza y evidencia pública;
+- composición frontend por bytes observables de HTML, CSS, JavaScript, JSON y WebAssembly;
 - Perú;
 - ISO Web Readiness + Evidence Center;
 - motor de remediación y criterio de cierre;
@@ -202,6 +206,10 @@ OPENAI_MODEL=gpt-5.6-luna
 CHROME_EXECUTABLE_PATH=
 CHROMIUM_PACK_URL=
 CYBERGCODE_QUEUE_DISABLED=0
+CYBERGCODE_AUDIT_KEY=
+CYBERGCODE_RATE_LIMIT=30
+CYBERGCODE_REPORT_SECRET=
+CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=0
 
 # Persistencia SQL
 DB_PROVIDER=mysql
@@ -217,6 +225,10 @@ CYBERGCODE_PLATFORM_KEY=
 ```
 
 `DB_PROVIDER` admite `mysql`, `mariadb`, `tidb`, `planetscale`, `postgres` y `neon`. Si no se define, el motor intenta inferir el dialecto por la URL. Las claves externas son opcionales; si una fuente no responde, el informe no crea datos sustitutos.
+
+`CYBERGCODE_AUDIT_KEY` protege el scanner cuando se configura. `CYBERGCODE_REPORT_SECRET` es obligatorio para exportar PDFs firmados y debe ser largo, aleatorio y diferente de las demás claves. La persistencia anónima está desactivada salvo que se establezca explícitamente `CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=1`.
+
+Límites operativos verificables: el rate limiting incluido vive en la instancia Node; para una cuota global entre regiones debe combinarse con Vercel Firewall o un contador distribuido. Los jobs llevan token de acceso, revisión e idempotency key, pero una exclusión estrictamente atómica entre workers simultáneos exige un lock/CAS distribuido (Redis o SQL), porque Runtime Cache no ofrece compare-and-swap. El navegador valida las direcciones de cada solicitud antes de permitirla y fija por IP el host principal; un proxy de salida con resolución fijada sigue siendo recomendable para eliminar por completo el riesgo DNS TOCTOU en subrecursos de terceros.
 
 ## Desarrollo
 
@@ -236,7 +248,7 @@ En local o si la cola no está disponible, el mismo motor cae a modo cliente sin
 
 1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
 2. Hacer push a la rama conectada a Vercel.
-3. Confirmar **ENGINE 0.15.1** y perfil **CG-STABLE-5**.
+3. Confirmar **ENGINE 0.16.1** y perfil **CG-STABLE-6**.
 4. Probar primero 12–25 páginas.
 5. Probar después 100 páginas y verificar el panel de progreso por lotes.
 6. Recargar durante un job y confirmar que aparece **Reanudar**.
@@ -254,7 +266,7 @@ En local o si la cola no está disponible, el mismo motor cae a modo cliente sin
 - PageSpeed no se ejecuta automáticamente sobre cada plantilla.
 - El detalle extremadamente grande de una página puede compactarse para almacenamiento temporal y queda marcado como tal.
 
-## Plataforma persistente V0.15.1 — MySQL/MariaDB + PostgreSQL
+## Plataforma persistente — MySQL/MariaDB + PostgreSQL
 
 La persistencia ahora usa una capa de adaptadores SQL. El motor de auditoría no depende del proveedor:
 
@@ -347,6 +359,6 @@ CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C.
 RUC 20615849988  
 cybergcode.com · Lambayeque, Perú
 
-## Paquete de producción
+## Validación del paquete
 
-Esta distribución **v0.15.1 Production** excluye deliberadamente toda la carpeta de pruebas y archivos `*.test.js`. El comando `npm test` también fue retirado del `package.json`. Se conserva `npm run check` porque únicamente valida la sintaxis del código de producción y no incorpora fixtures ni suites de pruebas al despliegue.
+La distribución de producción no incluye suites ni fixtures de pruebas. Antes del empaquetado se validaron sintaxis, seguridad, RDAP, composición, comparabilidad, firma de reportes, navegación y breakpoints responsive. Para una comprobación local del código distribuido usa `npm run check`.

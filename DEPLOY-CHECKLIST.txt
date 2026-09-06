@@ -1,31 +1,60 @@
-CYBERGCODE WEB AUDIT INTELLIGENCE — DEPLOY V0.15.0
+CYBERGCODE WEB AUDIT INTELLIGENCE — DEPLOY V0.16.1 · MYSQL/MARIADB + POSTGRES
 
 1. Subir el contenido del ZIP a la raíz del repositorio.
 2. Confirmar package.json, vercel.json, api/, lib/, migrations/ y public/ en la raíz.
-3. Vercel debe instalar @vercel/queue 0.5.0 y @neondatabase/serverless 1.1.0.
-4. Confirmar ENGINE 0.15.0 y CG-STABLE-5.
-5. Instalar Neon desde Vercel Marketplace y conectar la base de datos al proyecto.
-6. Confirmar que Vercel expone DATABASE_URL.
-7. Crear una variable secreta CYBERGCODE_PLATFORM_KEY con una clave administrativa larga y aleatoria.
-8. Hacer redeploy.
-9. Ejecutar una auditoría de 25 páginas para validar el modo directo.
-10. Abrir Proyecto, introducir CYBERGCODE_PLATFORM_KEY y confirmar estado PostgreSQL = Conectado.
-11. Ejecutar una segunda auditoría del mismo dominio y comprobar que ambas aparecen en Historial.
-12. Abrir Comparar y verificar Antes vs Después para score, hallazgos y SEO.
-13. Ejecutar una auditoría de 100 páginas.
-14. En Vercel > Queues, comprobar el topic cybergcode-large-audit y entregas al consumer.
-15. Cerrar el navegador durante el job de 100 páginas y volver después: el job debe seguir disponible y recuperar el resultado.
-16. Revisar el panel de progreso: modo Cola autónoma Vercel, reintentos y última actividad.
-17. Exportar PDF y comprobar Cobertura y muestreo por plantillas.
+3. Vercel instalará mysql2 3.24.3, @neondatabase/serverless y el resto de dependencias.
+4. Confirmar ENGINE 0.16.1 y CG-STABLE-6.
+5. Elegir proveedor SQL.
 
-DATABASE_URL no configurada:
+SEGURIDAD OBLIGATORIA EN PRODUCCIÓN
+- Configurar CYBERGCODE_AUDIT_KEY con una clave larga y aleatoria.
+- Configurar CYBERGCODE_REPORT_SECRET con otro secreto largo para autorizar PDFs.
+- Mantener CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=0.
+- El limitador incluido opera por instancia. Configurar además Vercel Firewall o un contador distribuido para cuotas globales.
+- Para exclusión atómica entre workers de jobs grandes se requiere un lock/CAS distribuido en Redis o SQL; Runtime Cache por sí solo no ofrece esa garantía.
+
+MYSQL / MARIADB (recomendado si ya trabajas con ese ecosistema)
+6. Crear una base vacía, por ejemplo: cybergcode_auditoria.
+7. En Vercel > Settings > Environment Variables configurar:
+   DB_PROVIDER=mysql
+   DATABASE_URL=mysql://usuario:password@host:3306/cybergcode_auditoria
+   CYBERGCODE_PLATFORM_KEY=<clave larga aleatoria>
+8. Para MariaDB también puedes usar:
+   DB_PROVIDER=mariadb
+   DATABASE_URL=mariadb://usuario:password@host:3306/cybergcode_auditoria
+9. Si el servidor exige TLS: DB_SSL=1.
+10. Si prefieres crear las tablas manualmente, ejecutar migrations/mysql/001_platform.sql.
+
+TIDB CLOUD
+11. Usar DB_PROVIDER=tidb y la URL MySQL del cluster; el driver activa TLS para hosts tidbcloud.com.
+
+POSTGRES / NEON (sigue soportado)
+12. DB_PROVIDER=postgres o neon.
+13. DATABASE_URL=postgresql://...
+14. Migración manual opcional: migrations/postgres/001_platform.sql.
+
+VALIDACIÓN
+15. Hacer Redeploy.
+16. Abrir Proyecto e introducir CYBERGCODE_PLATFORM_KEY.
+17. Confirmar Proveedor/Dialecto/Servidor = conectado.
+18. Ejecutar una auditoría de 12–25 páginas.
+19. Ejecutar otra del mismo dominio y revisar Historial.
+20. Abrir Comparar y verificar Antes vs Después.
+21. Probar una auditoría de 100 páginas para validar Queue + persistencia al finalizar.
+22. Exportar PDF.
+23. Intentar exportar un resultado modificado y confirmar rechazo de firma.
+24. Confirmar 401 con una CYBERGCODE_AUDIT_KEY incorrecta y 429 al superar la cuota.
+
+SIN BASE DE DATOS
 - El scanner sigue funcionando.
 - Proyecto / Historial / Comparar muestran persistencia desactivada.
 - No se inventan registros históricos.
 
-CYBERGCODE_PLATFORM_KEY no configurada:
-- Las auditorías pueden persistirse internamente si DATABASE_URL existe.
-- Los endpoints de lectura/edición de proyectos e histórico quedan bloqueados por seguridad.
+SEGURIDAD
+- No expongas DATABASE_URL en public/ ni JavaScript del navegador.
+- Usa un usuario SQL exclusivo con permisos únicamente sobre la base CYBERGCODE.
+- Mantén DB_POOL_LIMIT bajo (por defecto 3) en serverless.
+- Usa TLS cuando el proveedor lo soporte/requiera.
 
-Fallback Queue:
-Si Queues causa un problema temporal, definir CYBERGCODE_QUEUE_DISABLED=1 y redeploy. El motor vuelve al procesamiento client-driven sin eliminar funciones de auditoría.
+FALLBACK QUEUE
+Si Queues causa un problema temporal, definir CYBERGCODE_QUEUE_DISABLED=1 y redeploy.

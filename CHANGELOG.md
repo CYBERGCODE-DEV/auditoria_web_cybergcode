@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.16.1 — interfaz responsive unificada
+
+- Paquete de producción limpiado: eliminadas suites/fixtures de `test/`, scripts de pruebas y el generador Chromium heredado que ya no intervenía en Vercel.
+- Retirada la dependencia de desarrollo directa `tar-fs`; `axe-core` se conserva porque forma parte del analizador real de accesibilidad.
+- Portada compacta y adaptable desde 280 px hasta pantallas amplias.
+- Encabezado móvil en una sola fila, controles táctiles de 44 px y prevención de zoom de formularios en iOS.
+- Opciones de auditoría reorganizadas en rejilla y contraseña a ancho completo en móvil.
+- Cobertura convertida en carrusel horizontal con scroll snap para evitar páginas excesivamente largas.
+- Dashboard, métricas, recursos, tablas, evidencias, historial y comparaciones reforzados para móvil y tablet.
+- Breakpoints E2E ampliados a 320, 360, 390, 768, 1024 y 1440 px, con verificación de overflow y accesibilidad.
+
+## v0.16.0 — integridad, seguridad y tecnología/dominio
+
+- Corrige el recorrido CSSOM y la detección de pseudoestados sin caracteres de control.
+- Añade UUID completos, huella de perfil y bloqueo de comparaciones incompatibles.
+- Fija las conexiones HTTP a la IP pública previamente validada y fija el hostname principal en Chromium.
+- Añade clave opcional de auditoría, cuotas temporales y tokens de capacidad de 256 bits para jobs.
+- Firma el payload autorizado de PDF con HMAC-SHA256 y rechaza modificaciones.
+- Añade RDAP de dominio, vencimiento, días restantes, CNAME, IP RDAP y evidencia de hosting/CDN.
+- Añade tecnologías con confianza/evidencia y composición frontend por bytes observables.
+- Añade idempotency keys y revisiones de estado para entregas repetidas de Vercel Queues.
+- Incorpora pruebas unitarias, de integración y E2E con Node Test y Chromium.
+
 ## v0.15.1 — adaptadores MySQL/MariaDB y PostgreSQL
 
 - Nueva capa de persistencia multiproveedor seleccionable con `DB_PROVIDER`.

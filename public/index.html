@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#061427">
   <title>CYBERGCODE Web Audit Intelligence</title>
   <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, seguridad, accesibilidad, ISO, infraestructura y cumplimiento desde una sola URL.">
-  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.15.1" type="image/png">
-  <script src="/js/theme.js?v=0.15.1"></script>
-  <link rel="stylesheet" href="/css/app.css?v=0.15.1">
+  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.16.1" type="image/png">
+  <script src="/js/theme.js?v=0.16.1"></script>
+  <link rel="stylesheet" href="/css/app.css?v=0.16.1">
 </head>
 <body data-view="hero">
   <div class="ambient ambient-a" aria-hidden="true"></div>
@@ -18,14 +18,14 @@
     <div class="app-column">
       <header class="topbar">
         <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
-          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.15.1" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.15.1" alt=""></span>
+          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.16.1" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.16.1" alt=""></span>
           <span class="brand-copy"><strong>CYBERG<span>CODE</span></strong><small>WEB AUDIT INTELLIGENCE</small></span>
         </a>
         <div class="top-actions">
           <span class="real-data-badge"><i></i>Datos reales · sin simulación</span>
           <span id="platformDbBadge" class="platform-db-badge" title="Estado de persistencia"><i></i><span>Histórico</span></span>
           <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema"><span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span></button>
-          <div class="version">ENGINE 0.15.1</div>
+          <div class="version">ENGINE 0.16.1</div>
         </div>
       </header>
 
@@ -37,7 +37,7 @@
             <p class="lead">Rastreo, SEO, H1–H6, DOM renderizado, imágenes, rendimiento, accesibilidad, seguridad, infraestructura, cumplimiento e ISO Readiness. Cada observación explica qué se detectó, cómo corregirlo y cuándo puede considerarse cerrada.</p>
           </div>
 
-          <form id="auditForm" class="audit-form reveal" aria-describedby="stabilityHelp">
+          <form id="auditForm" class="audit-form" aria-describedby="stabilityHelp">
             <label for="url" class="sr-only">Dominio o URL</label>
             <div class="input-wrap">
               <span class="protocol">HTTPS</span>
@@ -77,6 +77,7 @@
               <label class="check"><input id="pageSpeed" type="checkbox" checked> PageSpeed / Lighthouse</label>
               <label class="check stability-check"><input id="stableMode" type="checkbox" checked> Modo estable</label>
               <label class="check"><input id="aiReview" type="checkbox"> Revisión IA opcional</label>
+              <label>Clave de auditoría <input id="auditAccessKey" type="password" autocomplete="current-password" placeholder="Opcional si el servidor es público"></label>
               <span class="secure-label">Seguridad pasiva · SSRF Guard</span>
             </div>
             <p id="largeAuditHint" class="large-audit-hint" hidden><strong>Auditoría grande:</strong> más de 50 páginas se procesan por lotes persistentes. SEO/HTML se rastrean en todas las páginas procesadas y Chromium usa una muestra representativa de plantillas.</p>
@@ -103,7 +104,7 @@
             <div class="working-wave working-wave-b" aria-hidden="true"></div>
 
             <div class="working-side working-left">
-              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.15.1" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
+              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.16.1" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
               <p class="working-kicker">AUDITORÍA EN PROCESO</p>
               <h2>Analizando<br><span id="workingDomain">—</span></h2>
               <p>Extrayendo y analizando datos reales del sitio en el servidor. La interfaz no inventa porcentajes ni resultados intermedios.</p>
@@ -173,7 +174,7 @@
 
             <div class="working-strip">
               <span><i>⚙</i><small>Modo estable</small><b>Activo</b></span>
-              <span><i>▤</i><small>Perfil</small><b>CG-STABLE-5</b></span>
+              <span><i>▤</i><small>Perfil</small><b>CG-STABLE-6</b></span>
               <span><i>▥</i><small>Región lógica</small><b>America/Lima</b></span>
               <span><i>◷</i><small>Cache de análisis</small><b>30 min</b></span>
             </div>
@@ -203,7 +204,9 @@
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="performance">Rendimiento</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="accessibility">Accesibilidad</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="visual">Diseño</button>
+            <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="technology">Tecnologías</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="infrastructure">Seguridad</button>
+            <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="domain">Dominio</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="peru">Perú</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="iso">ISO</button>
             <button class="dashboard-tab" type="button" role="tab" aria-selected="false" data-tab="findings">Observaciones</button>
@@ -226,7 +229,9 @@
               <option value="performance">Rendimiento</option>
               <option value="accessibility">Accesibilidad</option>
               <option value="visual">Diseño</option>
+              <option value="technology">Tecnologías</option>
               <option value="infrastructure">Seguridad</option>
+              <option value="domain">Dominio</option>
               <option value="peru">Perú</option>
               <option value="iso">ISO</option>
               <option value="findings">Observaciones</option>
@@ -321,7 +326,19 @@
             <article class="panel"><div class="panel-head"><div><span>SELECTORES SIN COINCIDENCIA</span><h3>Muestra observable; requiere validación por plantillas</h3></div></div><p class="legal-note">No se eliminan reglas automáticamente: estados dinámicos, otras rutas y CSS cross-origin pueden justificar selectores sin coincidencia en esta vista.</p><div id="unusedCssSamples" class="chip-list"></div></article>
           </section>
 
+          <section class="analysis-view" data-view="technology" role="tabpanel" hidden>
+            <div class="section-intro"><div><span>TECNOLOGÍAS Y CÓDIGO OBSERVABLE</span><h3>Stack detectado y composición del frontend</h3></div><p>Las firmas muestran confianza y evidencia. Los porcentajes se calculan sobre bytes públicos observados y no representan el backend ni el repositorio original.</p></div>
+            <div class="content-grid"><article class="panel"><span>COBERTURA</span><h3>Alcance de la medición</h3><div id="technologySummary" class="metric-list"></div></article><article class="panel"><span>COMPOSICIÓN FRONTEND</span><h3>Distribución por bytes observados</h3><div id="frontendComposition" class="composition-list"></div></article></div>
+            <article class="panel"><div class="panel-head"><div><span>STACK DETECTADO</span><h3>Tecnologías, confianza y evidencia pública</h3></div></div><div id="technologyEvidence" class="technology-list"></div></article>
+          </section>
+
           <section class="analysis-view" data-view="infrastructure" role="tabpanel" hidden><article class="panel infrastructure-panel" id="infrastructurePanel"><div class="panel-head"><div><span>SEGURIDAD E INFRAESTRUCTURA</span><h3>DNS, TLS, correo, cookies y terceros</h3></div></div><div class="infra-grid"><div><h4>TLS / DNS</h4><div id="infraDns" class="metric-list"></div></div><div><h4>Seguridad de correo</h4><div id="infraEmail" class="metric-list"></div></div><div><h4>Cookies y terceros</h4><div id="infraBrowser" class="metric-list"></div></div></div></article></section>
+
+          <section class="analysis-view" data-view="domain" role="tabpanel" hidden>
+            <div class="section-intro"><div><span>DOMINIO Y ALOJAMIENTO</span><h3>Registro RDAP, vencimiento, DNS, IP y proveedor observable</h3></div><p>La fecha de creación no demuestra cuándo compró el dominio el propietario actual. Una CDN puede ocultar el alojamiento de origen.</p></div>
+            <div class="content-grid"><article class="panel"><span>REGISTRO DEL DOMINIO</span><h3>Fechas y registrador</h3><div id="domainRegistration" class="metric-list"></div></article><article class="panel"><span>ALOJAMIENTO OBSERVABLE</span><h3>Red frontal y origen</h3><div id="hostingSummary" class="metric-list"></div></article></div>
+            <article class="panel"><div class="panel-head"><div><span>TRAZABILIDAD DE RED</span><h3>CNAME, IP y RDAP del rango</h3></div></div><div id="hostingEvidence" class="technology-list"></div></article>
+          </section>
 
           <section class="analysis-view" data-view="peru" role="tabpanel" hidden><article class="panel peru-panel" id="peruPanel"><div class="panel-head"><div><span>CUMPLIMIENTO Y CONFIANZA DIGITAL — PERÚ</span><h3>Privacidad, consumidor y comercio electrónico</h3></div></div><p class="legal-note">Evaluación de señales visibles. No constituye asesoría jurídica ni una declaración de infracción.</p><div id="peruSummary" class="iso-kpis"></div><div id="peruChecks" class="pe-checks"></div></article></section>
 
@@ -366,6 +383,6 @@
       <footer><span>CYBERGCODE SOLUCIONES TECNOLOGICAS S.A.C. · RUC 20615849988</span><span>cybergcode.com · Lambayeque, Perú</span></footer>
     </div>
   </div>
-  <script type="module" src="/js/app.js?v=0.15.1"></script>
+  <script type="module" src="/js/app.js?v=0.16.1"></script>
 </body>
 </html>

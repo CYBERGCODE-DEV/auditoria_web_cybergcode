@@ -10,6 +10,14 @@ let currentCacheState = '—';
 let workingStartedAt = 0;
 let workingTimerHandle = null;
 let currentLargeJobId = null;
+let currentLargeJobToken = null;
+const AUDIT_KEY_SESSION = 'cybergcode:audit-key';
+
+function auditAccessHeaders(extra = {}) {
+  let key = '';
+  try { key = sessionStorage.getItem(AUDIT_KEY_SESSION) || ''; } catch {}
+  return { ...extra, ...(key ? { 'x-cybergcode-audit-key':key } : {}) };
+}
 let platformState = { status:null, projects:[], history:[], currentProjectId:null };
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
@@ -68,14 +76,6 @@ $('#selectAllModules')?.addEventListener('click', () => {
   const shouldSelect = inputs.some((input) => !input.checked);
   inputs.forEach((input) => { input.checked = shouldSelect; });
   syncAuditModeUi({ initial:true });
-
-function syncLargeAuditHint() {
-  const pages = Number($('#maxPages')?.value || 0);
-  const large = pages > 50;
-  $('#largeAuditHint')?.toggleAttribute('hidden', !large);
-}
-$('#maxPages')?.addEventListener('change', syncLargeAuditHint);
-syncLargeAuditHint();
 });
 $('#deviceMobile')?.addEventListener('change', () => { if (!$('#deviceMobile').checked && !$('#deviceDesktop').checked) $('#deviceDesktop').checked = true; });
 $('#deviceDesktop')?.addEventListener('change', () => { if (!$('#deviceMobile').checked && !$('#deviceDesktop').checked) $('#deviceMobile').checked = true; });
@@ -94,6 +94,7 @@ function activateDashboardTab(name = 'overview') {
     const active = button.dataset.tab === name;
     button.classList.toggle('active', active);
     button.setAttribute('aria-selected', String(active));
+    button.tabIndex = active ? 0 : -1;
   });
   const mobileSelect = $('#dashboardTabSelect');
   if (mobileSelect && mobileSelect.value !== name) mobileSelect.value = name;
@@ -109,7 +110,22 @@ function activateDashboardTab(name = 'overview') {
   if (['project','history','compare'].includes(name)) loadPlatformView(name).catch((error) => console.warn('[platform-view]', error));
 }
 
-document.querySelectorAll('.dashboard-tab').forEach((button) => button.addEventListener('click', () => activateDashboardTab(button.dataset.tab)));
+document.querySelectorAll('.dashboard-tab').forEach((button) => {
+  const name = button.dataset.tab;
+  const panel = document.querySelector(`.analysis-view[data-view="${name}"]`);
+  button.id = `audit-tab-${name}`;
+  button.setAttribute('aria-controls', `audit-panel-${name}`);
+  button.tabIndex = button.classList.contains('active') ? 0 : -1;
+  if (panel) { panel.id = `audit-panel-${name}`; panel.setAttribute('aria-labelledby', button.id); }
+  button.addEventListener('click', () => activateDashboardTab(name));
+  button.addEventListener('keydown', (event) => {
+    if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    const tabs = [...document.querySelectorAll('.dashboard-tab:not([hidden])')];
+    const current = tabs.indexOf(button);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    event.preventDefault(); activateDashboardTab(tabs[next].dataset.tab); tabs[next].focus();
+  });
+});
 $('#dashboardTabSelect')?.addEventListener('change', (event) => activateDashboardTab(event.target.value));
 
 function initRevealAnimations() {
@@ -227,7 +243,7 @@ function animateGlobalScore(value) {
   const started = performance.now();
   const duration = 950;
   const tick = (now) => {
-    const progress = Math.min(1, (now - started) / duration);
+    const progress = Math.max(0, Math.min(1, (now - started) / duration));
     const eased = 1 - Math.pow(1 - progress, 3);
     const current = number * eased;
     scoreNode.textContent = String(Math.round(current));
@@ -464,11 +480,45 @@ function applyAuditTabAvailability(audit) {
   const available = {
     overview:true, seo:m.seo !== 'skipped', headings:m.headings !== 'skipped', content:m.content !== 'skipped', ux:m.uxCro !== 'skipped', pages:true, coverage:true,
     images:m.images !== 'skipped', performance:m.performance !== 'skipped', accessibility:m.accessibility !== 'skipped', visual:m.cssColors !== 'skipped' || m.screenshots !== 'skipped',
-    infrastructure:m.security !== 'skipped' || m.dnsTls !== 'skipped', peru:m.compliancePe !== 'skipped', iso:m.isoStandards !== 'skipped', findings:true,
+    technology:m.technologies !== 'skipped' || m.frontendComposition !== 'skipped', infrastructure:m.security !== 'skipped' || m.dnsTls !== 'skipped',
+    domain:m.domainRegistration !== 'skipped' || m.hosting !== 'skipped', peru:m.compliancePe !== 'skipped', iso:m.isoStandards !== 'skipped', findings:true,
     project:true, history:true, compare:true
   };
   document.querySelectorAll('.dashboard-tab').forEach((button)=>{ button.hidden = available[button.dataset.tab] === false; });
   syncDashboardTabAvailability();
+}
+
+function renderTechnologyProfile(audit) {
+  const profile = audit.technologyProfile || { status:'unavailable', technologies:audit.technologies || [], frontendComposition:[] };
+  $('#technologySummary').innerHTML = metricRows([
+    ['Estado', profile.status || 'N/D'], ['Páginas HTML', String(profile.coverage?.crawledHtmlPages ?? audit.pages?.length ?? 0)],
+    ['Páginas Chromium', String(profile.coverage?.browserPages ?? 0)], ['Código observable', formatBytes(profile.totalObservedCodeBytes)],
+    ['Recursos sin tamaño', String(profile.resourcesWithUnavailableSize || 0)], ['Backend', 'No observable desde URL']
+  ]);
+  $('#frontendComposition').innerHTML = (profile.frontendComposition || []).map((item) => `<div class="composition-row"><strong>${escapeHtml(item.language)}</strong><div class="composition-track" role="img" aria-label="${escapeHtml(item.language)} ${item.percentage ?? 0}%"><div class="composition-fill" style="width:${Math.max(0, Math.min(100, Number(item.percentage || 0)))}%"></div></div><small>${item.percentage ?? 'N/D'}% · ${formatBytes(item.bytes)}</small></div>`).join('') || '<p class="muted">No hubo suficientes tamaños públicos para calcular la composición.</p>';
+  $('#technologyEvidence').innerHTML = (profile.technologies || []).map((item) => `<article><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.category || 'Tecnología')}</span><small>${item.confidencePercent ?? Math.round((item.confidence || 0) * 100)}% confianza · ${escapeHtml(item.state || 'detectada')} · ${item.pages || 1} pág.</small><p>${escapeHtml(item.evidence || '')}</p></article>`).join('') || '<p class="muted">No se detectaron tecnologías con evidencia suficiente.</p>';
+}
+
+function renderDomainProfile(audit) {
+  const registration = audit.infrastructure?.registration;
+  const hosting = audit.infrastructure?.hosting;
+  const date = (value) => value ? new Date(value).toLocaleDateString('es-PE', { dateStyle:'long', timeZone:'UTC' }) : 'No publicado';
+  $('#domainRegistration').innerHTML = registration?.status === 'measured' ? metricRows([
+    ['Dominio registrado', registration.domain || 'N/D'], ['Creación registrada', date(registration.createdAt)],
+    ['Última actualización', date(registration.updatedAt)], ['Vencimiento', date(registration.expiresAt)],
+    ['Días restantes', Number.isFinite(registration.daysRemaining) ? String(registration.daysRemaining) : 'No publicado'],
+    ['Antigüedad', Number.isFinite(registration.ageDays) ? `${Math.floor(registration.ageDays / 365)} años (${registration.ageDays} días)` : 'No publicada'],
+    ['Registrador', registration.registrar?.name || 'No publicado'], ['IANA ID', registration.registrar?.ianaId || 'No publicado'],
+    ['DNSSEC RDAP', registration.dnssec || 'N/D'], ['Fuente', `RDAP · ${registration.isApexExact ? 'dominio exacto' : 'dominio registrable'}`]
+  ]) : `<div class="source-unavailable"><strong>RDAP no disponible</strong>${escapeHtml(registration?.error || 'El registro no publicó datos utilizables.')}</div>`;
+  $('#hostingSummary').innerHTML = hosting?.status === 'measured' ? metricRows([
+    ['Red frontal / CDN', hosting.edgeProvider || 'No detectada'], ['Origen observable', hosting.originObservable ? 'Sí, parcialmente' : 'No'],
+    ['Proveedor de origen', hosting.originProvider || 'No observable'], ['Clasificación', hosting.classification || 'N/D'],
+    ['Confianza', Number.isFinite(hosting.confidence) ? `${Math.round(hosting.confidence * 100)}%` : 'N/D'], ['IPs públicas', String(hosting.ips?.length || 0)]
+  ]) : '<div class="source-unavailable"><strong>Alojamiento no disponible</strong>No se resolvieron IP públicas utilizables.</div>';
+  const chain = (hosting?.cnameChain || []).map((item) => `<article><strong>CNAME</strong><span>${escapeHtml(item.from)}</span><p>→ ${escapeHtml(item.to)}</p></article>`);
+  const ips = (hosting?.ipRegistrations || []).map((item) => `<article><strong>${escapeHtml(item.ip)}</strong><span>${escapeHtml(item.organization || item.name || 'Propietario no publicado')}</span><small>${escapeHtml(item.handle || '')}${item.country ? ` · ${escapeHtml(item.country)}` : ''}</small><p>${item.status === 'measured' ? 'Propietario del rango IP observado mediante RDAP; no prueba una relación contractual de hosting.' : escapeHtml(item.error || 'Sin datos RDAP')}</p></article>`);
+  $('#hostingEvidence').innerHTML = [...chain, ...ips].join('') || '<p class="muted">No se recibió evidencia de red.</p>';
 }
 
 function renderInfrastructure(audit) {
@@ -794,7 +844,7 @@ async function loadLargePageDetail(button) {
   button.disabled = true;
   button.textContent = 'Cargando…';
   try {
-    const response = await fetch(`/api/jobs/page?id=${encodeURIComponent(id)}&url=${encodeURIComponent(url)}`);
+    const response = await fetch(`/api/jobs/page?id=${encodeURIComponent(id)}&url=${encodeURIComponent(url)}`, { headers:jobAccessHeaders() });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'No se pudo cargar el detalle.');
     target.innerHTML = fullPageDetailMarkup(data.page);
@@ -897,7 +947,7 @@ function renderAudit(audit) {
   currentAudit = audit;
   $('#targetName').textContent = new URL(audit.meta.target).hostname;
   $('#auditMeta').textContent = `${audit.meta.id} · ${audit.summary.pagesCrawled} páginas · ${audit.summary.findingsTotal ?? audit.findings.length} hallazgos${audit.summary.payloadTruncated ? ` (mostrando ${audit.summary.findingsReturned} prioritarios)` : ''} · ${new Date(audit.meta.finishedAt).toLocaleString('es-PE')}`;
-  applyAuditTabAvailability(audit); renderScores(audit); renderStats(audit); renderConsistency(audit); renderActionPlan(audit); renderSeo(audit); renderHeadings(audit); renderContent(audit); renderUx(audit); renderImages(audit); renderPageSpeed(audit); renderFieldPerformance(audit); renderBrowser(audit); renderCssAnalysis(audit); renderAccessibility(audit); renderInfrastructure(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderCoverage(audit); renderOverview(audit);
+  applyAuditTabAvailability(audit); renderScores(audit); renderStats(audit); renderConsistency(audit); renderActionPlan(audit); renderSeo(audit); renderHeadings(audit); renderContent(audit); renderUx(audit); renderImages(audit); renderPageSpeed(audit); renderFieldPerformance(audit); renderBrowser(audit); renderCssAnalysis(audit); renderAccessibility(audit); renderTechnologyProfile(audit); renderInfrastructure(audit); renderDomainProfile(audit); renderPeru(audit); renderIso(audit); renderEvidenceCenter(audit); renderFindings(audit); renderPages(audit); renderCoverage(audit); renderOverview(audit);
   syncResponsiveTableLabels();
   $('#modules').innerHTML = Object.entries(audit.modules).map(([key,value]) => `<div class="module"><b>${escapeHtml(key)}</b><span class="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join('');
   syncCurrentProjectFromAudit(audit);
@@ -945,7 +995,7 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.15.1'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.16.1'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
@@ -994,7 +1044,7 @@ async function showDetectedSiteLogo(data) {
 
 async function loadSiteIdentity(raw) {
   try {
-    const response = await fetch('/api/identity', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ url: raw }) });
+    const response = await fetch('/api/identity', { method:'POST', headers:auditAccessHeaders({'content-type':'application/json'}), body:JSON.stringify({ url: raw }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Sin identidad visual');
     if (data.hostname) {
@@ -1042,9 +1092,13 @@ function updateLargeJobProgress(job) {
 
 const LARGE_JOB_STORAGE_KEY = 'cybergcode:active-large-job';
 
+function jobAccessHeaders(extra = {}) {
+  return { ...extra, ...(currentLargeJobToken ? { 'x-cybergcode-job-token':currentLargeJobToken } : {}) };
+}
+
 function saveLargeJobReference(job, target) {
   if (!job?.id) return;
-  localStorage.setItem(LARGE_JOB_STORAGE_KEY, JSON.stringify({ id:job.id, target:target || job.target, savedAt:new Date().toISOString() }));
+  localStorage.setItem(LARGE_JOB_STORAGE_KEY, JSON.stringify({ id:job.id, token:currentLargeJobToken, target:target || job.target, savedAt:new Date().toISOString() }));
 }
 
 function clearLargeJobReference() {
@@ -1057,14 +1111,14 @@ function readLargeJobReference() {
 }
 
 async function getLargeJobStatus(id) {
-  const response = await fetch(`/api/jobs/status?id=${encodeURIComponent(id)}`);
+  const response = await fetch(`/api/jobs/status?id=${encodeURIComponent(id)}`, { headers:jobAccessHeaders() });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'No se pudo consultar el job.');
   return data.job;
 }
 
 async function getLargeJobResult(id) {
-  const response = await fetch(`/api/jobs/result?id=${encodeURIComponent(id)}`);
+  const response = await fetch(`/api/jobs/result?id=${encodeURIComponent(id)}`, { headers:jobAccessHeaders() });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'No se pudo recuperar el resultado del job.');
   return data;
@@ -1093,7 +1147,7 @@ async function waitForAutonomousJob(job, target) {
 async function processClientJobStep(job) {
   let attempts = 0;
   while (attempts < 5) {
-    const response = await fetch('/api/jobs/process', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:job.id }) });
+    const response = await fetch('/api/jobs/process', { method:'POST', headers:jobAccessHeaders({'content-type':'application/json'}), body:JSON.stringify({ id:job.id }) });
     const data = await response.json();
     if (response.ok) return data.job;
     if (!data.retryable) throw new Error(data.error || 'Falló un lote del rastreo.');
@@ -1108,7 +1162,7 @@ async function processClientJobStep(job) {
 async function finalizeClientJob(job) {
   let attempts = 0;
   while (attempts < 4) {
-    const response = await fetch('/api/jobs/finalize', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:job.id }) });
+    const response = await fetch('/api/jobs/finalize', { method:'POST', headers:jobAccessHeaders({'content-type':'application/json'}), body:JSON.stringify({ id:job.id }) });
     const data = await response.json();
     if (response.ok) return data;
     if (!data.retryable) throw new Error(data.error || 'No se pudo consolidar la auditoría grande.');
@@ -1119,12 +1173,13 @@ async function finalizeClientJob(job) {
   throw new Error('La consolidación agotó sus reintentos disponibles desde el navegador.');
 }
 
-async function runLargeAudit(payload = null, { resumeId = null, resumeTarget = null } = {}) {
+async function runLargeAudit(payload = null, { resumeId = null, resumeTarget = null, resumeToken = null } = {}) {
   let job;
   let orchestrationMode = null;
   const target = resumeTarget || payload?.url || '';
 
   if (resumeId) {
+    currentLargeJobToken = resumeToken;
     job = await getLargeJobStatus(resumeId);
     currentLargeJobId = job.id;
     orchestrationMode = job.orchestration?.mode || 'client';
@@ -1135,10 +1190,11 @@ async function runLargeAudit(payload = null, { resumeId = null, resumeTarget = n
       return stored.result;
     }
   } else {
-    const startResponse = await fetch('/api/jobs/start', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
+    const startResponse = await fetch('/api/jobs/start', { method:'POST', headers:auditAccessHeaders({'content-type':'application/json'}), body:JSON.stringify(payload) });
     const startData = await startResponse.json();
     if (!startResponse.ok) throw new Error(startData.error || 'No se pudo iniciar el job de auditoría.');
     job = startData.job;
+    currentLargeJobToken = startData.accessToken;
     orchestrationMode = startData.orchestration?.mode || job.orchestration?.mode || 'client';
     currentLargeJobId = job.id;
     saveLargeJobReference(job, target || job.target);
@@ -1198,7 +1254,8 @@ $('#resumeJobButton')?.addEventListener('click', async (event) => {
   loadSiteIdentity(target).catch(() => null);
   currentCacheState = 'JOB';
   try {
-    const result = await runLargeAudit(null, { resumeId:id, resumeTarget:target });
+    const ref = readLargeJobReference();
+    const result = await runLargeAudit(null, { resumeId:id, resumeTarget:target, resumeToken:ref?.token || null });
     stopWorkingTimer();
     renderAudit(result);
     view('dashboard');
@@ -1216,7 +1273,8 @@ $('#discardJobButton')?.addEventListener('click', async () => {
   const ref = readLargeJobReference();
   if (ref?.id) {
     try {
-      await fetch('/api/jobs/cancel', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ id:ref.id }) });
+      currentLargeJobToken = ref.token || null;
+      await fetch('/api/jobs/cancel', { method:'POST', headers:jobAccessHeaders({'content-type':'application/json'}), body:JSON.stringify({ id:ref.id }) });
     } catch { /* el TTL del job también limpia el estado temporal */ }
   }
   clearLargeJobReference();
@@ -1490,12 +1548,15 @@ $('#projectEditForm')?.addEventListener('submit', async (event) => {
 });
 
 fetchPlatformStatus().catch(() => null);
+try { $('#auditAccessKey').value = sessionStorage.getItem(AUDIT_KEY_SESSION) || ''; } catch {}
+$('#auditAccessKey')?.addEventListener('change', (event) => { try { sessionStorage.setItem(AUDIT_KEY_SESSION, event.target.value.trim()); } catch {} });
 
 document.querySelectorAll('[data-open-tab]').forEach(button => button.addEventListener('click', () => activateDashboardTab(button.dataset.openTab)));
 document.querySelectorAll('[data-jump-tab]').forEach(button => button.addEventListener('click', () => { if (!currentAudit) return; activateDashboardTab(button.dataset.jumpTab); document.querySelector('.dashboard-nav')?.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block:'start'}); }));
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
+  try { sessionStorage.setItem(AUDIT_KEY_SESSION, $('#auditAccessKey')?.value.trim() || ''); } catch {}
   submitButton.disabled = true;
   view('working');
   startWorkingTimer();
@@ -1511,7 +1572,7 @@ form.addEventListener('submit', async (event) => {
       data = await runLargeAudit(payload);
     } else {
       $('#jobProgressPanel').hidden = true;
-      const response = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
+      const response = await fetch('/api/audit', { method:'POST', headers:auditAccessHeaders({'content-type':'application/json'}), body:JSON.stringify(payload) });
       data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Error de auditoría.');
       currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
@@ -1527,7 +1588,7 @@ form.addEventListener('submit', async (event) => {
 });
 
 $('#severityFilter').addEventListener('change', () => currentAudit && renderFindings(currentAudit));
-$('#newAudit').addEventListener('click', () => { stopWorkingTimer(); currentAudit = null; currentLargeJobId = null; $('#jobProgressPanel').hidden = true; view('hero'); $('#url').focus(); });
+$('#newAudit').addEventListener('click', () => { stopWorkingTimer(); currentAudit = null; currentLargeJobId = null; currentLargeJobToken = null; $('#jobProgressPanel').hidden = true; view('hero'); $('#url').focus(); });
 $('#retryButton').addEventListener('click', () => { stopWorkingTimer(); view('hero'); });
 $('#exportPdf').addEventListener('click', async () => {
   if (!currentAudit) return;
@@ -1545,6 +1606,7 @@ $('#exportPdf').addEventListener('click', async () => {
       ux: currentAudit.ux,
       imageSummary: currentAudit.imageSummary,
       technologies: currentAudit.technologies,
+      technologyProfile: currentAudit.technologyProfile,
       css: currentAudit.css,
       accessibilityManual: currentAudit.accessibilityManual,
       pages: currentAudit.pages,
@@ -1552,8 +1614,8 @@ $('#exportPdf').addEventListener('click', async () => {
       iso: currentAudit.iso,
       templateSampling: currentAudit.templateSampling || null
     };
-    const response = await fetch('/api/report', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) });
-    if (!response.ok) throw new Error('No se pudo generar el PDF.');
+    const response = await fetch('/api/report', { method:'POST', headers:auditAccessHeaders({'content-type':'application/json'}), body:JSON.stringify(payload) });
+    if (!response.ok) { const detail = await response.json().catch(() => null); throw new Error(detail?.error || 'No se pudo generar el PDF.'); }
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `${currentAudit.meta.id}.pdf`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
