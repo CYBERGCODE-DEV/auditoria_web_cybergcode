@@ -5,5 +5,7 @@ test/
 coverage/
 *.log
 *.zip
+Desktop.ini
+Thumbs.db
 .env
 .env.local
