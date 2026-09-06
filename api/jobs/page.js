@@ -1,5 +1,5 @@
 import { getJob, getJobChunk } from '../../lib/jobs/job-store.js';
-import { assertLargeAuditJobAccess } from '../../lib/jobs/large-audit.js';
+import { assertLargeAuditJobAccess } from '../../lib/jobs/large-audit-state.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');

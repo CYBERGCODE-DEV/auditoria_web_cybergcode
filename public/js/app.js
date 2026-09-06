@@ -1310,7 +1310,7 @@ function setPlatformBadge(state) {
 async function fetchPlatformStatus({ force = false } = {}) {
   if (platformState.status && !force) return platformState.status;
   try {
-    const response = await platformFetch('/api/platform-status', { cache:'no-store' });
+    const response = await platformFetch('/api/platform?resource=status', { cache:'no-store' });
     const data = await response.json();
     platformState.status = data;
     platformState.projects = data.recentProjects || platformState.projects;
@@ -1345,7 +1345,7 @@ async function refreshProjects({ selectCurrent = true } = {}) {
     renderPlatformUnavailable(status?.database?.ready ? 'Acceso administrativo requerido para consultar proyectos.' : status?.database?.reason);
     return [];
   }
-  const response = await platformFetch('/api/projects?limit=100', { cache:'no-store' });
+  const response = await platformFetch('/api/platform?resource=projects&limit=100', { cache:'no-store' });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'No se pudieron cargar los proyectos.');
   platformState.projects = data.projects || [];
@@ -1423,7 +1423,7 @@ async function renderProjectView() {
 
 async function loadProjectHistory(projectId = platformState.currentProjectId) {
   if (!projectId) { platformState.history = []; renderHistory(); return []; }
-  const response = await platformFetch(`/api/history?projectId=${encodeURIComponent(projectId)}&limit=60`, { cache:'no-store' });
+  const response = await platformFetch(`/api/platform?resource=history&projectId=${encodeURIComponent(projectId)}&limit=60`, { cache:'no-store' });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'No se pudo cargar el histórico.');
   platformState.history = data.audits || [];
@@ -1449,7 +1449,7 @@ function renderHistory() {
   list.querySelectorAll('[data-compare-before]').forEach((button) => button.addEventListener('click', () => { activateDashboardTab('compare'); $('#compareBefore').value = button.dataset.compareBefore; }));
   list.querySelectorAll('[data-compare-after]').forEach((button) => button.addEventListener('click', () => { activateDashboardTab('compare'); $('#compareAfter').value = button.dataset.compareAfter; }));
   list.querySelectorAll('[data-load-audit]').forEach((button) => button.addEventListener('click', async () => {
-    const response = await platformFetch(`/api/audit-record?id=${encodeURIComponent(button.dataset.loadAudit)}&result=1`, { cache:'no-store' });
+    const response = await platformFetch(`/api/platform?resource=audit-record&id=${encodeURIComponent(button.dataset.loadAudit)}&result=1`, { cache:'no-store' });
     const data = await response.json();
     if (!response.ok || !data.audit?.result) return alert(data.error || 'El resultado completo no está almacenado.');
     renderAudit(data.audit.result); view('dashboard');
@@ -1492,7 +1492,7 @@ async function runComparisonRequest() {
   const before = $('#compareBefore').value, after = $('#compareAfter').value;
   if (!before || !after || before === after) { $('#comparisonHint').textContent = 'Selecciona dos auditorías diferentes.'; return; }
   $('#comparisonHint').textContent = 'Calculando deltas sobre datos persistidos…';
-  const response = await platformFetch(`/api/comparison?before=${encodeURIComponent(before)}&after=${encodeURIComponent(after)}`, { cache:'no-store' });
+  const response = await platformFetch(`/api/platform?resource=comparison&before=${encodeURIComponent(before)}&after=${encodeURIComponent(after)}`, { cache:'no-store' });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'No se pudo comparar.');
   const c = data.comparison;
@@ -1541,7 +1541,7 @@ $('#projectEditForm')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const id = platformState.currentProjectId;
   if (!id) return;
-  const response = await platformFetch(`/api/project?id=${encodeURIComponent(id)}`, { method:'PATCH', headers:{'content-type':'application/json'}, body:JSON.stringify({ name:$('#projectNameInput').value, description:$('#projectDescriptionInput').value }) });
+  const response = await platformFetch(`/api/platform?resource=project&id=${encodeURIComponent(id)}`, { method:'PATCH', headers:{'content-type':'application/json'}, body:JSON.stringify({ name:$('#projectNameInput').value, description:$('#projectDescriptionInput').value }) });
   const data = await response.json();
   if (!response.ok) return alert(data.error || 'No se pudo guardar el proyecto.');
   await refreshProjects({ selectCurrent:false }); renderCurrentProjectPanel();

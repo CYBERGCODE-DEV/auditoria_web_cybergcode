@@ -1,4 +1,4 @@
-import { assertLargeAuditJobAccess, getLargeAuditJobStatus } from '../../lib/jobs/large-audit.js';
+import { assertLargeAuditJobAccess, getLargeAuditJobStatus } from '../../lib/jobs/large-audit-state.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');

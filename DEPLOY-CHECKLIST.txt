@@ -2,6 +2,7 @@ CYBERGCODE WEB AUDIT INTELLIGENCE — DEPLOY V0.16.1 · MYSQL/MARIADB + POSTGRES
 
 1. Subir el contenido del ZIP a la raíz del repositorio.
 2. Confirmar package.json, vercel.json, api/, lib/, migrations/ y public/ en la raíz.
+   El deployment debe generar 11 Functions; no restaurar los seis endpoints api/platform-* antiguos ni api/queues/.
 3. Vercel instalará mysql2 3.24.3, @neondatabase/serverless y el resto de dependencias.
 4. Confirmar ENGINE 0.16.1 y CG-STABLE-6.
 5. Elegir proveedor SQL.

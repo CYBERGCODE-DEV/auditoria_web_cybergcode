@@ -1,0 +1,9 @@
+node_modules/
+.vercel/
+.git/
+test/
+coverage/
+*.log
+*.zip
+.env
+.env.local

@@ -5,6 +5,8 @@
 - Paquete de producción limpiado: eliminadas suites/fixtures de `test/`, scripts de pruebas y el generador Chromium heredado que ya no intervenía en Vercel.
 - Retirada la dependencia de desarrollo directa `tar-fs`; `axe-core` se conserva porque forma parte del analizador real de accesibilidad.
 - Retirado el trigger experimental de Vercel Queues que impedía registrar los outputs del deployment; las auditorías grandes conservan el flujo compatible por lotes desde el cliente.
+- Chromium queda limitado a `api/audit` y `api/jobs/finalize`: el Build Output baja de 618.93 MB/9,245 archivos a un paquete mucho menor sin copias en endpoints livianos.
+- Los seis endpoints SQL se consolidan en `api/platform`, y se elimina el endpoint legado de Queue para quedar por debajo del límite de Functions de Vercel Hobby.
 - Portada compacta y adaptable desde 280 px hasta pantallas amplias.
 - Encabezado móvil en una sola fila, controles táctiles de 44 px y prevención de zoom de formularios en iOS.
 - Opciones de auditoría reorganizadas en rejilla y contraseña a ancho completo en móvil.

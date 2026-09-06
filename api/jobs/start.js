@@ -1,4 +1,5 @@
-import { createLargeAuditJob, getLargeAuditJobStatus } from '../../lib/jobs/large-audit.js';
+import { createLargeAuditJob } from '../../lib/jobs/large-audit-create.js';
+import { getLargeAuditJobStatus } from '../../lib/jobs/large-audit-state.js';
 import { enqueueLargeAuditStep } from '../../lib/jobs/queue-orchestrator.js';
 import { requireAuditAccess } from '../../lib/security/api-access.js';
 
