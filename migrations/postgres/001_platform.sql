@@ -30,3 +30,18 @@ CREATE TABLE IF NOT EXISTS cybergcode_audits (
 );
 CREATE INDEX IF NOT EXISTS cybergcode_audits_project_created_idx ON cybergcode_audits(project_id, completed_at DESC);
 CREATE INDEX IF NOT EXISTS cybergcode_audits_hostname_created_idx ON cybergcode_audits(hostname, completed_at DESC);
+
+CREATE TABLE IF NOT EXISTS cybergcode_rate_limits (
+  bucket_key TEXT PRIMARY KEY,
+  window_start BIGINT NOT NULL,
+  used INTEGER NOT NULL DEFAULT 0,
+  expires_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS cybergcode_rate_limits_expires_idx ON cybergcode_rate_limits(expires_at);
+
+CREATE TABLE IF NOT EXISTS cybergcode_job_locks (
+  lock_key TEXT PRIMARY KEY,
+  owner_token TEXT NOT NULL,
+  expires_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS cybergcode_job_locks_expires_idx ON cybergcode_job_locks(expires_at);

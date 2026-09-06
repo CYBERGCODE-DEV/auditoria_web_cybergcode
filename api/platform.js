@@ -8,6 +8,7 @@ import {
   listProjects
 } from '../lib/platform/repository.js';
 import { hasPlatformAccess, platformAccessConfigured, requirePlatformAccess } from '../lib/platform/access.js';
+import { withApiObservability } from '../lib/observability/api.js';
 
 function bodyOf(req) {
   return typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
@@ -87,7 +88,7 @@ async function comparison(req, res) {
 
 const handlers = { status, projects, project, history, 'audit-record':auditRecord, comparison };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const resource = String(req.query?.resource || 'status');
   const selected = handlers[resource];
@@ -100,3 +101,5 @@ export default async function handler(req, res) {
     return res.status(400).json({ error:error?.message || 'No se pudo procesar la solicitud de plataforma.' });
   }
 }
+
+export default withApiObservability('platform', handler);

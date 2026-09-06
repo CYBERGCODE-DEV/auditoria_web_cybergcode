@@ -1,10 +1,11 @@
 import { buildAuditPdf } from '../lib/report/pdf.js';
 import { requireAuditAccess } from '../lib/security/api-access.js';
 import { verifyReportAuthorization } from '../lib/report/integrity.js';
+import { withApiObservability } from '../lib/observability/api.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
-  if (!requireAuditAccess(req, res, { scope:'report', cost:2 })) return;
+  if (!await requireAuditAccess(req, res, { scope:'report', cost:2 })) return;
   try {
     const audit = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body;
     if (!audit?.meta?.id || !Array.isArray(audit?.findings)) return res.status(400).json({ error: 'Informe de auditoría inválido.' });
@@ -20,3 +21,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'No se pudo generar el PDF.' });
   }
 }
+
+export default withApiObservability('report', handler);

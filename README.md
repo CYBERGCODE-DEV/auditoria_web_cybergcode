@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.16.1
+# CYBERGCODE Web Audit Intelligence v0.17.0
 
 Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
 
@@ -207,7 +207,9 @@ CHROME_EXECUTABLE_PATH=
 CHROMIUM_PACK_URL=
 CYBERGCODE_AUDIT_KEY=
 CYBERGCODE_RATE_LIMIT=30
+CYBERGCODE_JOB_RATE_LIMIT=180
 CYBERGCODE_REPORT_SECRET=
+CYBERGCODE_ALLOW_ANONYMOUS_AUDITS=0
 CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=0
 
 # Persistencia SQL
@@ -225,9 +227,9 @@ CYBERGCODE_PLATFORM_KEY=
 
 `DB_PROVIDER` admite `mysql`, `mariadb`, `tidb`, `planetscale`, `postgres` y `neon`. Si no se define, el motor intenta inferir el dialecto por la URL. Las claves externas son opcionales; si una fuente no responde, el informe no crea datos sustitutos.
 
-`CYBERGCODE_AUDIT_KEY` protege el scanner cuando se configura. `CYBERGCODE_REPORT_SECRET` es obligatorio para exportar PDFs firmados y debe ser largo, aleatorio y diferente de las demás claves. La persistencia anónima está desactivada salvo que se establezca explícitamente `CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=1`.
+En producción, `CYBERGCODE_AUDIT_KEY` es obligatoria, debe tener al menos 32 caracteres y protege el scanner; solo se permite omitirla si se acepta explícitamente el riesgo mediante `CYBERGCODE_ALLOW_ANONYMOUS_AUDITS=1`. `CYBERGCODE_REPORT_SECRET` es obligatorio para exportar PDFs firmados y debe ser largo, aleatorio y diferente de las demás claves. La persistencia anónima está desactivada salvo que se establezca explícitamente `CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=1`.
 
-Límites operativos verificables: el rate limiting incluido vive en la instancia Node; para una cuota global entre regiones debe combinarse con Vercel Firewall o un contador distribuido. Los jobs llevan token de acceso, revisión e idempotency key, pero una exclusión estrictamente atómica entre workers simultáneos exige un lock/CAS distribuido (Redis o SQL), porque Runtime Cache no ofrece compare-and-swap. El navegador valida las direcciones de cada solicitud antes de permitirla y fija por IP el host principal; un proxy de salida con resolución fijada sigue siendo recomendable para eliminar por completo el riesgo DNS TOCTOU en subrecursos de terceros.
+Límites operativos verificables: cuando existe una base SQL, el rate limiting y los locks de jobs usan tablas compartidas y actualizaciones atómicas; sin base de datos se declara y utiliza un fallback por instancia. Chromium navega mediante un proxy local que valida DNS y fija una IP pública para cada conexión HTTP/HTTPS, además de la validación por solicitud.
 
 ## Desarrollo
 
@@ -247,7 +249,7 @@ El navegador debe permanecer abierto durante el procesamiento. Si se interrumpe,
 
 1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
 2. Hacer push a la rama conectada a Vercel.
-3. Confirmar **ENGINE 0.16.1** y perfil **CG-STABLE-6**.
+3. Confirmar **ENGINE 0.17.0** y perfil **CG-STABLE-6**.
 4. Probar primero 12–25 páginas.
 5. Probar después 100 páginas y verificar el panel de progreso por lotes.
 6. Recargar durante un job y confirmar que aparece **Reanudar**.
@@ -360,4 +362,4 @@ cybergcode.com · Lambayeque, Perú
 
 ## Validación del paquete
 
-La distribución de producción no incluye suites ni fixtures de pruebas. Antes del empaquetado se validaron sintaxis, seguridad, RDAP, composición, comparabilidad, firma de reportes, navegación y breakpoints responsive. Para una comprobación local del código distribuido usa `npm run check`.
+El repositorio incluye pruebas unitarias, de integración y E2E; `.vercelignore` evita incorporarlas al runtime de producción. Ejecuta `npm run check` y `npm test`. GitHub Actions repite ambas validaciones y `npm audit` en cada push y pull request.

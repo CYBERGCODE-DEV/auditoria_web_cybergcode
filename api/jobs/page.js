@@ -1,7 +1,9 @@
 import { getJob, getJobChunk } from '../../lib/jobs/job-store.js';
 import { assertLargeAuditJobAccess } from '../../lib/jobs/large-audit-state.js';
+import { withApiObservability } from '../../lib/observability/api.js';
+import { requireJobRateLimit } from '../../lib/security/api-access.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Método no permitido.' });
   try {
@@ -9,6 +11,7 @@ export default async function handler(req, res) {
     const url = String(req.query?.url || '');
     if (!id || !url) throw new Error('Faltan id o url.');
     await assertLargeAuditJobAccess(id, req.headers?.['x-cybergcode-job-token']);
+    if (!await requireJobRateLimit(req, res, id, { scope:'jobs/page' })) return;
     const job = await getJob(id);
     if (!job) return res.status(404).json({ error: 'Job no encontrado o expirado.' });
     for (let i = 0; i < Number(job.chunkCount || 0); i += 1) {
@@ -21,3 +24,5 @@ export default async function handler(req, res) {
     return res.status(error?.code === 'JOB_ACCESS_DENIED' ? 403 : 400).json({ error: error?.message || 'No se pudo obtener el detalle.' });
   }
 }
+
+export default withApiObservability('jobs/page', handler);

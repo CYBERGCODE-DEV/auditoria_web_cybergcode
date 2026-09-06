@@ -2,11 +2,12 @@ import { createLargeAuditJob } from '../../lib/jobs/large-audit-create.js';
 import { getLargeAuditJobStatus } from '../../lib/jobs/large-audit-state.js';
 import { enqueueLargeAuditStep } from '../../lib/jobs/queue-orchestrator.js';
 import { requireAuditAccess } from '../../lib/security/api-access.js';
+import { withApiObservability } from '../../lib/observability/api.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
-  if (!requireAuditAccess(req, res, { scope:'large-audit', cost:10 })) return;
+  if (!await requireAuditAccess(req, res, { scope:'large-audit', cost:10 })) return;
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const job = await createLargeAuditJob({
@@ -27,3 +28,5 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: error?.message || 'No se pudo iniciar el job.' });
   }
 }
+
+export default withApiObservability('jobs/start', handler);

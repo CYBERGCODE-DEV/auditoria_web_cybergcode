@@ -5,11 +5,12 @@ import { resolveAuditConfig } from '../lib/config/audit-modes.js';
 import { persistAuditResult } from '../lib/platform/repository.js';
 import { auditPersistenceAllowed, requireAuditAccess } from '../lib/security/api-access.js';
 import { attachReportAuthorization } from '../lib/report/integrity.js';
+import { withApiObservability } from '../lib/observability/api.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
-  if (!requireAuditAccess(req, res, { scope:'audit', cost:5 })) return;
+  if (!await requireAuditAccess(req, res, { scope:'audit', cost:5 })) return;
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
@@ -83,3 +84,5 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: error?.message || 'No se pudo completar la auditoría.' });
   }
 }
+
+export default withApiObservability('audit', handler);

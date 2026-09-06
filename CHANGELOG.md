@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.17.0 — calidad, seguridad distribuida y observabilidad
+
+- Restaura pruebas unitarias, integración y E2E responsive en seis viewports, ejecutadas por GitHub Actions.
+- Añade rate limiting compartido mediante MySQL/PostgreSQL y fallback por instancia cuando SQL no está configurado.
+- Añade locks distribuidos con expiración para impedir procesamiento simultáneo de un job grande.
+- Enruta Chromium por un proxy local que valida y fija direcciones IP públicas para mitigar DNS rebinding/TOCTOU en subrecursos.
+- Exige claves de producción robustas y secretos HMAC de al menos 32 caracteres.
+- Añade `X-Request-ID` y logs estructurados de ruta, estado y duración en todas las Functions.
+- Valida navegación real, RDAP, hosting y tecnologías contra `cybergcode.com`, además de redirecciones y dominios públicos de control.
+- Corrige peticiones HEAD para no rechazar respuestas por un cuerpo que no se descarga.
+
 ## v0.16.1 — interfaz responsive unificada
 
 - Paquete de producción limpiado: eliminadas suites/fixtures de `test/`, scripts de pruebas y el generador Chromium heredado que ya no intervenía en Vercel.

@@ -10,6 +10,21 @@ CREATE TABLE IF NOT EXISTS cybergcode_projects (
   updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS cybergcode_rate_limits (
+  bucket_key VARCHAR(191) PRIMARY KEY,
+  window_start BIGINT NOT NULL,
+  used INT NOT NULL DEFAULT 0,
+  expires_at BIGINT NOT NULL,
+  INDEX cybergcode_rate_limits_expires_idx (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS cybergcode_job_locks (
+  lock_key VARCHAR(191) PRIMARY KEY,
+  owner_token VARCHAR(64) NOT NULL,
+  expires_at BIGINT NOT NULL,
+  INDEX cybergcode_job_locks_expires_idx (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS cybergcode_audits (
   id VARCHAR(64) PRIMARY KEY,
   project_id VARCHAR(40) NOT NULL,
