@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.21.1 — configuración Supabase segura y estados de proyecto coherentes
+
+- Rechaza URI de conexión que todavía contienen marcadores de ejemplo como `REGION`, `PROJECT_REF` o `[YOUR-PASSWORD]`, sin efectuar consultas DNS inútiles.
+- Traduce errores de DNS, autenticación, tiempo de espera y TLS a indicaciones seguras y accionables sin exponer credenciales.
+- Oculta la edición y creación de proyectos cuando la persistencia SQL no está disponible, y mejora el ajuste del diagnóstico en pantallas estrechas.
+
 ## v0.21.0 — informe navegable, progreso verificable y Supabase SQL
 
 - Reemplazo de las veinte pestañas horizontales por un índice lateral jerárquico del informe y selector compacto en móvil.

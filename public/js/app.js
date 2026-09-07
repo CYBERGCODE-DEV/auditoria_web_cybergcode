@@ -1113,7 +1113,7 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.21.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.21.1'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
@@ -1507,6 +1507,10 @@ function renderPlatformUnavailable(reason = '') {
   if (metrics) metrics.innerHTML = `<div class="source-unavailable platform-diagnostic"><strong>Histórico persistente desactivado</strong><span>${escapeHtml(reason || 'Configura DB_PROVIDER=postgres y SUPABASE_DB_URL con la cadena del pooler de Supabase.')}</span><small>Las claves SUPABASE_URL y SUPABASE_ANON_KEY autentican usuarios, pero no sustituyen la conexión SQL del histórico.</small></div>`;
   const projectList = $('#projectList'); if (projectList) projectList.innerHTML = '<div class="source-unavailable"><strong>Sin base de datos</strong>El auditor sigue funcionando normalmente; solo la persistencia histórica está desactivada.</div>';
   const history = $('#historyList'); if (history) history.innerHTML = '<div class="source-unavailable"><strong>Histórico no disponible</strong>No se inventan ejecuciones pasadas.</div>';
+  $('#projectEditForm')?.classList.add('hidden');
+  $('#projectCreateForm')?.classList.add('hidden');
+  const createButton = $('#createProjectToggle');
+  if (createButton) { createButton.disabled = true; createButton.title = 'Conecta la base de datos para crear proyectos.'; }
 }
 
 function renderProjectList() {
@@ -1551,6 +1555,8 @@ async function renderProjectView() {
   const ready = status?.database?.ready;
   const authorized = status?.access?.authorized === true;
   const pill = $('#platformStatusPill');
+  const createButton = $('#createProjectToggle');
+  if (createButton) { createButton.disabled = !(ready && authorized); createButton.title = ready && authorized ? '' : 'Conecta y autoriza la base de datos para crear proyectos.'; }
   if (pill) { pill.textContent = !ready ? 'No configurado' : (authorized ? 'Conectado' : 'Protegido'); pill.classList.toggle('pass', ready && authorized); }
   if (!ready) { renderPlatformUnavailable(status?.database?.reason); return; }
   $('#platformStatusMetrics').innerHTML = metricRows([
