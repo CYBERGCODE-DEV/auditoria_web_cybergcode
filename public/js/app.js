@@ -99,6 +99,11 @@ function activateDashboardTab(name = 'overview') {
   });
   const mobileSelect = $('#dashboardTabSelect');
   if (mobileSelect && mobileSelect.value !== name) mobileSelect.value = name;
+  document.querySelectorAll('[data-report-tab]').forEach((button) => {
+    const active = button.dataset.reportTab === name;
+    button.classList.toggle('active', active);
+    if (active) button.closest('details')?.setAttribute('open', '');
+  });
   document.querySelectorAll('.analysis-view').forEach((section) => {
     const active = section.dataset.view === name;
     section.classList.toggle('active', active);
@@ -113,11 +118,12 @@ function activateDashboardTab(name = 'overview') {
 
 window.CGAuditOpenPlatform = (name='project') => {
   hero.classList.add('hidden'); working.classList.add('hidden'); errorBox.classList.add('hidden'); dashboard.classList.remove('hidden'); dashboard.classList.add('platform-only');
+  $('#reportNavigation')?.classList.add('hidden');
   document.body.dataset.view='dashboard'; $('#targetName').textContent='Espacio de trabajo'; $('#auditMeta').textContent='Proyectos, histórico y comparaciones de tu organización'; $('#exportPdf').classList.add('hidden');
   activateDashboardTab(['project','history','compare'].includes(name)?name:'project');
 };
 window.CGAuditOpenNew = () => {
-  dashboard.classList.add('hidden'); dashboard.classList.remove('platform-only'); $('#exportPdf').classList.remove('hidden'); hero.classList.remove('hidden'); document.body.dataset.view='hero'; hero.scrollIntoView({behavior:'smooth'});
+  dashboard.classList.add('hidden'); dashboard.classList.remove('platform-only'); $('#reportNavigation')?.classList.add('hidden'); $('#exportPdf').classList.remove('hidden'); hero.classList.remove('hidden'); document.body.dataset.view='hero'; hero.scrollIntoView({behavior:'smooth'});
 };
 
 document.querySelectorAll('.dashboard-tab').forEach((button) => {
@@ -180,6 +186,7 @@ function view(name) {
   working.classList.toggle('hidden', name !== 'working');
   dashboard.classList.toggle('hidden', name !== 'dashboard');
   errorBox.classList.toggle('hidden', name !== 'error');
+  $('#reportNavigation')?.classList.toggle('hidden', name !== 'dashboard' || !currentAudit);
   if (name === 'dashboard') activateDashboardTab('overview');
 }
 
@@ -276,11 +283,12 @@ function beginServerAudit(payload) {
   const requested = requestedWorkingModules(payload);
   for (const module of Object.keys(workingModuleMap)) {
     if (module === 'report') continue;
-    setOrbitState(module, requested.has(module) ? 'active' : 'skipped');
+    setOrbitState(module, requested.has(module) ? 'pending' : 'skipped', requested.has(module) ? 'Tras el rastreo' : 'No seleccionado');
   }
+  setOrbitState('seo', requested.has('seo') ? 'active' : 'skipped', requested.has('seo') ? 'Iniciando rastreo' : 'No seleccionado');
   setWorkingStep('#workingStepAudit', 'active');
   setLiveTask('#liveAnalysis', 'active');
-  setWorkingText('El servidor está ejecutando las verificaciones seleccionadas. Los resultados se mostrarán únicamente cuando hayan sido recibidos.', 'Analizando sitio');
+  setWorkingText('El servidor está creando el trabajo y comenzará a informar cada URL realmente procesada.', 'Preparando rastreo');
 }
 
 function completeServerAudit(audit) {
@@ -1059,6 +1067,8 @@ function renderAudit(audit) {
   syncResponsiveTableLabels();
   $('#modules').innerHTML = Object.entries(audit.modules).map(([key,value]) => `<div class="module"><b>${escapeHtml(key)}</b><span class="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join('');
   syncCurrentProjectFromAudit(audit);
+  $('#reportNavigation')?.classList.remove('hidden');
+  if ($('#reportFindingCount')) $('#reportFindingCount').textContent = String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0);
 }
 
 
@@ -1103,7 +1113,7 @@ function renderOverview(audit) {
   const unmeasured = Object.entries(audit.modules || {}).filter(([,v]) => ['unavailable','planned'].includes(v)).map(([k]) => k);
   $('#auditInfo').innerHTML = metricRows([
     ['ID', audit.meta?.id || '—'], ['Dominio', new URL(audit.meta.target).hostname], ['Modo', audit.meta?.auditConfig?.label || audit.meta?.mode || '—'], ['Dispositivos', `${audit.meta?.auditConfig?.devices?.mobile ? 'Móvil' : ''}${audit.meta?.auditConfig?.devices?.mobile && audit.meta?.auditConfig?.devices?.desktop ? ' + ' : ''}${audit.meta?.auditConfig?.devices?.desktop ? 'Escritorio' : ''}` || 'N/D'], ['Páginas', String(audit.summary?.pagesCrawled ?? 0)], ['Hallazgos', String(audit.summary?.findingsTotal ?? audit.findings?.length ?? 0)],
-    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.19.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
+    ['Motor', `CYBERGCODE ${audit.meta?.engineVersion || '0.21.0'}`], ['Región', audit.meta?.consistency?.functionRegion || 'N/D'], ['Política de datos', audit.meta?.dataIntegrity?.simulated === false ? 'Medidos · sin simulación' : 'N/D'], ['Módulos no medidos', unmeasured.length ? unmeasured.join(', ') : 'Ninguno']
   ]);
 }
 
@@ -1213,6 +1223,8 @@ function updateLargeJobProgress(job) {
     setWorkingStep('#workingStepConsolidate', 'active');
     setLiveTask('#liveConsolidate', 'active');
     setOrbitState('report', 'active', 'Construyendo');
+    const requested = requestedWorkingModules({ auditMode:job.config?.mode, modules:job.config?.modules });
+    for (const module of requested) if (module !== 'seo') setOrbitState(module, 'active', 'Validando');
     setWorkingText('El servidor está consolidando la evidencia obtenida durante el rastreo.', 'Consolidando informe');
   }
   if (job.status === 'completed') completeWorkingReport();
@@ -1442,6 +1454,7 @@ async function fetchPlatformStatus({ force = false } = {}) {
   try {
     const response = await platformFetch('/api/platform?resource=status', { cache:'no-store' });
     const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `No se pudo consultar la plataforma (HTTP ${response.status}).`);
     platformState.status = data;
     platformState.projects = data.recentProjects || platformState.projects;
     setPlatformBadge(data);
@@ -1491,7 +1504,7 @@ async function refreshProjects({ selectCurrent = true } = {}) {
 function renderPlatformUnavailable(reason = '') {
   const pill = $('#platformStatusPill'); if (pill) { pill.textContent = 'No configurado'; pill.classList.remove('pass'); }
   const metrics = $('#platformStatusMetrics');
-  if (metrics) metrics.innerHTML = `<div class="source-unavailable"><strong>Histórico persistente desactivado</strong>${escapeHtml(reason || 'Configura DB_PROVIDER y DATABASE_URL para activar proyectos, histórico y comparativas.')}</div>`;
+  if (metrics) metrics.innerHTML = `<div class="source-unavailable platform-diagnostic"><strong>Histórico persistente desactivado</strong><span>${escapeHtml(reason || 'Configura DB_PROVIDER=postgres y SUPABASE_DB_URL con la cadena del pooler de Supabase.')}</span><small>Las claves SUPABASE_URL y SUPABASE_ANON_KEY autentican usuarios, pero no sustituyen la conexión SQL del histórico.</small></div>`;
   const projectList = $('#projectList'); if (projectList) projectList.innerHTML = '<div class="source-unavailable"><strong>Sin base de datos</strong>El auditor sigue funcionando normalmente; solo la persistencia histórica está desactivada.</div>';
   const history = $('#historyList'); if (history) history.innerHTML = '<div class="source-unavailable"><strong>Histórico no disponible</strong>No se inventan ejecuciones pasadas.</div>';
 }
@@ -1665,6 +1678,22 @@ $('#platformAccessForm')?.addEventListener('submit', async (event) => {
 });
 
 $('#refreshProjects')?.addEventListener('click', () => renderProjectView().catch((error) => alert(error.message)));
+$('#createProjectToggle')?.addEventListener('click', () => $('#projectCreateForm')?.classList.toggle('hidden'));
+$('#projectCreateForm')?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const response = await platformFetch('/api/platform?resource=projects', {
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({ domain:$('#newProjectDomain').value, name:$('#newProjectName').value, description:$('#newProjectDescription').value })
+  });
+  const data = await response.json();
+  if (!response.ok) return alert(data.error || 'No se pudo crear el proyecto.');
+  platformState.currentProjectId = data.project?.id || null;
+  event.currentTarget.reset();
+  event.currentTarget.classList.add('hidden');
+  await refreshProjects({ selectCurrent:false });
+  renderCurrentProjectPanel();
+});
 $('#historyProjectSelect')?.addEventListener('change', async (event) => { platformState.currentProjectId = event.target.value; renderProjectList(); await loadProjectHistory(event.target.value); renderCurrentProjectPanel(); });
 $('#runComparison')?.addEventListener('click', () => runComparisonRequest().catch((error) => { $('#comparisonHint').textContent = error.message; }));
 $('#projectEditForm')?.addEventListener('submit', async (event) => {
@@ -1676,12 +1705,28 @@ $('#projectEditForm')?.addEventListener('submit', async (event) => {
   if (!response.ok) return alert(data.error || 'No se pudo guardar el proyecto.');
   await refreshProjects({ selectCurrent:false }); renderCurrentProjectPanel();
 });
+$('#archiveProject')?.addEventListener('click', async () => {
+  const id = platformState.currentProjectId;
+  if (!id || !window.confirm('¿Archivar este proyecto? Las auditorías se conservarán y un administrador podrá recuperarlo.')) return;
+  const project = platformState.projects.find((item) => item.id === id);
+  const response = await platformFetch(`/api/platform?resource=project&id=${encodeURIComponent(id)}`, { method:'PATCH', headers:{'content-type':'application/json'}, body:JSON.stringify({ name:project?.name, description:project?.description, archived:true }) });
+  const data = await response.json();
+  if (!response.ok) return alert(data.error || 'No se pudo archivar el proyecto.');
+  platformState.currentProjectId = null;
+  await refreshProjects();
+  renderCurrentProjectPanel();
+});
 
 fetchPlatformStatus().catch(() => null);
 try { $('#auditAccessKey').value = sessionStorage.getItem(AUDIT_KEY_SESSION) || ''; } catch {}
 $('#auditAccessKey')?.addEventListener('change', (event) => { try { sessionStorage.setItem(AUDIT_KEY_SESSION, event.target.value.trim()); } catch {} });
 
 document.querySelectorAll('[data-open-tab]').forEach(button => button.addEventListener('click', () => activateDashboardTab(button.dataset.openTab)));
+document.querySelectorAll('[data-report-tab]').forEach(button => button.addEventListener('click', () => {
+  activateDashboardTab(button.dataset.reportTab);
+  if (window.innerWidth <= 896) document.body.classList.remove('sidebar-open');
+  document.querySelector('.dashboard-head')?.scrollIntoView({ behavior:reduceMotion ? 'auto' : 'smooth', block:'start' });
+}));
 document.querySelectorAll('[data-jump-tab]').forEach(button => button.addEventListener('click', () => { if (!currentAudit) return; activateDashboardTab(button.dataset.jumpTab); document.querySelector('.dashboard-nav')?.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block:'start'}); }));
 
 form.addEventListener('submit', async (event) => {
@@ -1696,17 +1741,8 @@ form.addEventListener('submit', async (event) => {
   const identityPromise = loadSiteIdentity(rawTarget);
   try {
     beginServerAudit(payload);
-    let data;
-    if (payload.maxPages > 50) {
-      currentCacheState = 'JOB';
-      data = await runLargeAudit(payload);
-    } else {
-      $('#jobProgressPanel').hidden = true;
-      const response = await fetch('/api/audit', { method:'POST', headers:auditAccessHeaders({'content-type':'application/json'}), body:JSON.stringify(payload) });
-      data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Error de auditoría.');
-      currentCacheState = response.headers.get('x-cybergcode-cache') || '—';
-    }
+    currentCacheState = 'JOB CON PROGRESO';
+    const data = await runLargeAudit(payload);
     await identityPromise.catch(() => null);
     completeServerAudit(data);
     completeWorkingReport();

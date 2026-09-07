@@ -82,6 +82,27 @@ test('interfaz sin overflow y menús conectados en seis viewports', { timeout:12
     assert.equal(privateLayout.columns,2);
     assert.equal(privateLayout.sidebarVisible,true);
     assert.equal(privateLayout.overflow,true);
+    const reportLayout = await page.evaluate(() => {
+      const nav = document.querySelector('#reportNavigation');
+      nav.classList.remove('hidden');
+      const button = nav.querySelector('[data-report-tab="headings"]');
+      button.click();
+      const cards = document.querySelector('#scoreCards');
+      cards.innerHTML = '<article class="panel score-card"><span>Accesibilidad</span><b>79</b><em>/ 100</em><div class="score-bar"><i style="--bar:79%"></i></div></article><article class="panel score-card"><span>ISO / Cumplimiento observable</span><b>67</b><em>/ 100</em><div class="score-bar"><i style="--bar:67%"></i></div></article>';
+      const scoreCards = [...cards.querySelectorAll('.score-card')];
+      return {
+        links:nav.querySelectorAll('[data-report-tab]').length,
+        active:button.classList.contains('active') && document.querySelector('[data-view="headings"]')?.classList.contains('active'),
+        barsClear:scoreCards.every((card) => {
+          const suffix = card.querySelector('em').getBoundingClientRect();
+          const bar = card.querySelector('.score-bar').getBoundingClientRect();
+          return bar.top >= suffix.bottom;
+        })
+      };
+    });
+    assert.ok(reportLayout.links >= 17);
+    assert.equal(reportLayout.active,true);
+    assert.equal(reportLayout.barsClear,true);
     if (visualDir) await page.screenshot({ path:path.join(visualDir,'workspace-laptop-1440.png'),fullPage:true });
     await page.goto(`http://127.0.0.1:${app.address().port}/`, { waitUntil:'networkidle0' });
     const menuResult = await page.evaluate(async () => {
@@ -109,7 +130,7 @@ test('interfaz sin overflow y menús conectados en seis viewports', { timeout:12
         await request.respond({ status:200, contentType:'application/json', body:JSON.stringify({ hostname:'example.com', visual:null }) });
         return;
       }
-      if (url.pathname === '/api/audit') {
+      if (url.pathname === '/api/jobs/start') {
         await new Promise((resolve) => setTimeout(resolve, 1400));
         await request.respond({ status:503, contentType:'application/json', body:'{"error":"fin controlado de prueba"}' });
         return;
@@ -133,10 +154,10 @@ test('interfaz sin overflow y menús conectados en seis viewports', { timeout:12
     }));
     assert.equal(progress.view, 'working');
     assert.equal(progress.columns, 3);
-    assert.equal(progress.status, 'Analizando sitio');
+    assert.equal(progress.status, 'Preparando rastreo');
     assert.equal(progress.connectionDone, true);
     assert.equal(progress.analysisActive, true);
-    assert.ok(progress.activeModules >= 6);
+    assert.equal(progress.activeModules, 1);
     assert.equal(progress.domainFits, true);
     assert.notEqual(progress.animation, 'none');
     if (visualDir) await progressPage.screenshot({ path:path.join(visualDir, 'working-tablet-834.png'), fullPage:true });

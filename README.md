@@ -1,4 +1,4 @@
-# CYBERGCODE Web Audit Intelligence v0.19.0
+# CYBERGCODE Web Audit Intelligence v0.21.0
 
 Plataforma de auditoría web integral preparada para **GitHub → Vercel**, con frontend HTML/CSS/JavaScript y backend Node.js/Vercel Functions.
 
@@ -37,7 +37,7 @@ La consola administrativa puede asignar planes manuales y periodos, pero no decl
 
 ## Novedad principal V0.14: auditorías grandes autónomas de 100–500 páginas
 
-Hasta 50 páginas se mantiene la ejecución directa existente. Cuando el usuario solicita **más de 50 páginas**, la interfaz crea un **job temporal por lotes** en vez de intentar procesar cientos de URLs dentro de una única Function.
+Todas las auditorías privadas usan un **job temporal con progreso verificable**. La interfaz informa URLs procesadas, fase del servidor, fallos y consolidación a partir del estado devuelto por la API; no avanza módulos mediante temporizadores simulados.
 
 ### Flujo real
 
@@ -252,13 +252,14 @@ CYBERGCODE_REPORT_SECRET=
 CYBERGCODE_ALLOW_ANONYMOUS_AUDITS=0
 CYBERGCODE_ALLOW_ANONYMOUS_PERSISTENCE=0
 
-# Persistencia SQL
-DB_PROVIDER=mysql
-DATABASE_URL=mysql://usuario:password@host:3306/cybergcode_auditoria
+# Persistencia SQL (Supabase recomendado si ya utilizas Supabase Auth)
+DB_PROVIDER=postgres
+SUPABASE_DB_URL=postgresql://usuario.proyecto:password@host-pooler:6543/postgres?sslmode=require
+DATABASE_URL=
 MYSQL_URL=
 MARIADB_URL=
 POSTGRES_URL=
-DB_SSL=0
+DB_SSL=1
 DB_SSL_REJECT_UNAUTHORIZED=1
 DB_POOL_LIMIT=4
 DB_CONNECT_TIMEOUT_MS=10000
@@ -291,16 +292,16 @@ El navegador debe permanecer abierto durante el procesamiento. Si se interrumpe,
 
 1. Mantener `package.json`, `vercel.json`, `api/`, `lib/` y `public/` en la raíz del repositorio.
 2. Hacer push a la rama conectada a Vercel.
-3. Confirmar **ENGINE 0.19.0** y perfil **CG-STABLE-6**.
+3. Confirmar **ENGINE 0.21.0** y perfil **CG-STABLE-6**.
 4. Probar primero 12–25 páginas.
 5. Probar después 100 páginas y verificar el panel de progreso por lotes.
 6. Recargar durante un job y confirmar que aparece **Reanudar**.
 7. Abrir la pestaña **Cobertura** y comprobar los grupos/representantes.
-8. Confirmar que una auditoría >50 páginas usa `/api/jobs/*` y no `/api/audit` directamente.
+8. Confirmar que la interfaz privada usa `/api/jobs/*` y muestra el conteo real de URLs procesadas.
 
 ## Procesamiento por lotes
 
-- En Vercel, las auditorías de más de 50 páginas se procesan mediante `/api/jobs/*`.
+- En Vercel, las auditorías privadas se procesan mediante `/api/jobs/*`; el flujo directo se conserva como API compatible hasta 50 páginas.
 - El frontend solicita cada lote, consulta el estado real y ordena la consolidación; el navegador debe permanecer abierto.
 - La orquestación no crea Functions adicionales ni depende de triggers experimentales.
 - El estado temporal del job se mantiene en Runtime Cache durante hasta 12 horas y registra eventos, reintentos y fase de ejecución.
@@ -322,7 +323,7 @@ Snapshot + resumen
   ↓
 DATABASE ADAPTER
   ├─ MySQL / MariaDB / TiDB
-  └─ PostgreSQL / Neon
+  └─ PostgreSQL / Supabase / Neon
   ↓
 Historial + Antes vs Después
 ```
@@ -356,9 +357,19 @@ DATABASE_URL=mysql://usuario:password@host:4000/cybergcode_auditoria
 
 Se utiliza el mismo adaptador MySQL. El runtime activa TLS automáticamente para hosts `tidbcloud.com`.
 
-### PostgreSQL / Neon
+### PostgreSQL / Supabase / Neon
 
-Sigue totalmente soportado:
+Para Supabase utiliza la URI del **Transaction pooler**, no `SUPABASE_URL` ni la clave publishable:
+
+```env
+DB_PROVIDER=postgres
+SUPABASE_DB_URL=postgresql://usuario.proyecto:password@host-pooler:6543/postgres?sslmode=require
+DB_SSL=1
+```
+
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` sirven para autenticación y administración de usuarios. No abren una conexión SQL y no sustituyen `SUPABASE_DB_URL`.
+
+PostgreSQL y Neon también siguen soportados:
 
 ```env
 DB_PROVIDER=neon

@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07111f"><title>Administración · CYBERGCODE</title>
-  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.20.0" type="image/png">
-  <script src="/js/theme.js?v=0.20.0"></script>
-  <link rel="stylesheet" href="/css/app.css?v=0.20.0"><link rel="stylesheet" href="/css/admin.css?v=0.20.0">
+  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.21.0" type="image/png">
+  <script src="/js/theme.js?v=0.21.0"></script>
+  <link rel="stylesheet" href="/css/app.css?v=0.21.0"><link rel="stylesheet" href="/css/admin.css?v=0.21.0">
 </head>
 <body class="admin-page">
   <div class="admin-app">
@@ -39,5 +39,5 @@
   </div>
   <dialog id="inviteDialog" class="auth-dialog"><form id="adminInviteForm" method="dialog"><button class="dialog-close" value="cancel" aria-label="Cerrar">×</button><p class="eyebrow">NUEVA CUENTA</p><h2>Invitar usuario</h2><p>El usuario recibirá un enlace de activación en su correo.</p><label>Correo<input id="newEmail" type="email" autocomplete="email" required></label><label>Rol<select id="newRole"><option value="analyst">Analista</option><option value="reader">Lector</option></select></label><label>Organización<input id="newOrganization" placeholder="Vacío = organización independiente"></label><p id="inviteStatus" class="form-message"></p><button class="primary-action" type="submit">Enviar activación</button></form></dialog>
   <dialog id="userDialog" class="admin-user-dialog"><form id="userEditForm" method="dialog"><div class="admin-dialog-head"><div><p class="eyebrow">GESTIÓN DE CUENTA</p><h2 id="editUserTitle">Usuario</h2></div><button class="dialog-close" value="cancel" aria-label="Cerrar">×</button></div><input id="editUserId" type="hidden"><div class="admin-form-grid"><label>Rol<select id="editRole"><option value="admin">Administrador</option><option value="analyst">Analista</option><option value="reader">Lector</option></select></label><label>Organización<input id="editOrganization" required></label><label>Plan<select id="editPlan"><option value="none">Sin plan</option><option value="manual">Concesión manual</option><option value="monthly">Plan mensual</option><option value="annual">Plan anual</option></select></label><label>Periodo<select id="editPeriod"><option value="none">Sin periodo</option><option value="monthly">Mensual</option><option value="annual">Anual</option></select></label><label>Estado<select id="editSubscriptionStatus"><option value="inactive">Inactivo</option><option value="trialing">Prueba</option><option value="active">Activo</option><option value="past_due">Pago pendiente</option><option value="cancelled">Cancelado</option></select></label><label>Próxima renovación<input id="editRenewal" type="date"></label><label>Límite de auditorías<input id="editAuditLimit" type="number" min="0" max="100000"></label><label>Auditorías utilizadas<input id="editAuditUsed" type="number" min="0" max="100000"></label><label>Días adicionales<input id="editBonusDays" type="number" min="0" max="3650"></label><label class="admin-check"><input id="editCancelAtEnd" type="checkbox"> Cancelar al terminar el periodo</label><label class="admin-check"><input id="editDisabled" type="checkbox"> Cuenta suspendida</label></div><p class="admin-payment-note">Pasarela no configurada: cualquier plan asignado aquí es una concesión administrativa manual y no confirma un pago.</p><div class="admin-dialog-actions"><button id="resendActivation" class="mini-action" type="button">Reenviar activación</button><button id="revokeSessions" class="mini-action danger" type="button">Revocar sesiones</button><button class="primary-action" type="submit">Guardar cambios</button></div><p id="editStatus" class="form-message"></p></form></dialog>
-  <script type="module" src="/js/admin.js?v=0.20.0"></script>
+  <script type="module" src="/js/admin.js?v=0.21.0"></script>
 </body></html>

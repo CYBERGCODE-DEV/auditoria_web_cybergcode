@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#061427">
   <title>CYBERGCODE Web Audit Intelligence</title>
   <meta name="description" content="Auditoría web integral de CYBERGCODE: SEO, rendimiento, seguridad, accesibilidad, ISO, infraestructura y cumplimiento desde una sola URL.">
-  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.20.0" type="image/png">
-  <script src="/js/theme.js?v=0.20.0"></script>
-  <link rel="stylesheet" href="/css/app.css?v=0.20.0">
+  <link rel="icon" href="/assets/cybergcode-symbol.png?v=0.21.0" type="image/png">
+  <script src="/js/theme.js?v=0.21.0"></script>
+  <link rel="stylesheet" href="/css/app.css?v=0.21.0">
 </head>
 <body data-view="hero">
   <div class="ambient ambient-a" aria-hidden="true"></div>
@@ -18,7 +18,7 @@
     <div class="app-column">
       <header class="topbar">
         <a class="brand" href="/" aria-label="CYBERGCODE Web Audit Intelligence">
-          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.19.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.19.0" alt=""></span>
+          <span class="brand-symbol-wrap" aria-hidden="true"><img class="brand-symbol brand-symbol-light" src="/assets/cybergcode-symbol.png?v=0.21.0" alt=""><img class="brand-symbol brand-symbol-dark" src="/assets/cybergcode-symbol-dark.png?v=0.21.0" alt=""></span>
           <span class="brand-copy"><strong>CYBERG<span>CODE</span></strong><small>WEB AUDIT INTELLIGENCE</small></span>
         </a>
         <nav id="publicNav" class="public-nav"><a href="#features">Características</a><a href="#how">Cómo funciona</a><a href="#privacy">Seguridad y privacidad</a></nav>
@@ -32,7 +32,7 @@
           <button id="loginOpen" class="session-action" type="button">Iniciar sesión</button>
           <button id="logoutButton" class="session-action hidden" type="button">Salir</button>
           <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema"><span class="theme-icon" aria-hidden="true">◐</span><span class="theme-text">Tema</span></button>
-          <div class="version">ENGINE 0.20.0</div>
+          <div class="version">ENGINE 0.21.0</div>
         </div>
       </header>
 
@@ -100,6 +100,38 @@
               <button class="workspace-link" type="button" data-workspace="project"><svg viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v10H3z"></path></svg><span>Proyectos</span></button>
               <button class="workspace-link" type="button" data-workspace="history"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6M4 4v5h5M12 8v5l3 2"></path></svg><span>Historial</span></button>
               <button class="workspace-link" type="button" data-workspace="compare"><svg viewBox="0 0 24 24"><path d="M8 4L4 8l4 4M4 8h10M16 20l4-4-4-4M20 16H10"></path></svg><span>Comparaciones</span></button>
+              <div id="reportNavigation" class="report-navigation hidden" aria-label="Secciones del informe actual">
+                <p>INFORME ACTUAL</p>
+                <button class="report-nav-link active" type="button" data-report-tab="overview"><span>Resumen ejecutivo</span></button>
+                <details open>
+                  <summary>Optimización</summary>
+                  <button type="button" data-report-tab="seo">SEO técnico</button>
+                  <button type="button" data-report-tab="headings">Encabezados H1–H6</button>
+                  <button type="button" data-report-tab="content">Contenido</button>
+                  <button type="button" data-report-tab="ux">UX y conversión</button>
+                  <button type="button" data-report-tab="pages">Páginas rastreadas</button>
+                  <button type="button" data-report-tab="coverage">Cobertura</button>
+                  <button type="button" data-report-tab="images">Imágenes</button>
+                </details>
+                <details>
+                  <summary>Experiencia</summary>
+                  <button type="button" data-report-tab="performance">Rendimiento</button>
+                  <button type="button" data-report-tab="accessibility">Accesibilidad</button>
+                  <button type="button" data-report-tab="visual">Diseño y CSS</button>
+                </details>
+                <details>
+                  <summary>Tecnología y riesgo</summary>
+                  <button type="button" data-report-tab="technology">Tecnologías</button>
+                  <button type="button" data-report-tab="infrastructure">Seguridad</button>
+                  <button type="button" data-report-tab="domain">Dominio y hosting</button>
+                </details>
+                <details>
+                  <summary>Cumplimiento</summary>
+                  <button type="button" data-report-tab="peru">Normativa Perú</button>
+                  <button type="button" data-report-tab="iso">ISO readiness</button>
+                </details>
+                <button class="report-nav-link report-nav-action" type="button" data-report-tab="findings"><span>Plan de acción</span><b id="reportFindingCount">0</b></button>
+              </div>
               <p>CUENTA</p>
               <a class="workspace-link" href="/account"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c.8-5 3.5-7 8-7s7.2 2 8 7"></path></svg><span>Mi cuenta</span></a>
               <a id="sidebarAdmin" class="workspace-link" href="/admin"><svg viewBox="0 0 24 24"><path d="M12 3l2 2 3-.3.8 2.8 2.5 1.5-1.1 2.8 1.1 2.8-2.5 1.5-.8 2.8-3-.3-2 2-2-2-3 .3-.8-2.8-2.5-1.5 1.1-2.8L3.7 9l2.5-1.5L7 4.7l3 .3z"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Administración</span></a>
@@ -204,7 +236,7 @@
             <div class="working-wave working-wave-b" aria-hidden="true"></div>
 
             <div class="working-side working-left">
-              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.19.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
+              <div class="working-brand-lockup" aria-label="CYBERGCODE Web Audit Intelligence"><img src="/assets/cybergcode-symbol-dark.png?v=0.21.0" alt=""><span><strong>CYBERG<em>CODE</em></strong><small>WEB AUDIT INTELLIGENCE</small></span></div>
               <p class="working-kicker">AUDITORÍA EN PROCESO</p>
               <h2>Analizando<br><span id="workingDomain">—</span></h2>
               <p id="workingActivity">Preparando una conexión segura con el dominio.</p>
@@ -456,9 +488,9 @@
             <div class="section-intro"><div><span>PROYECTO</span><h3>Proyecto persistente del dominio auditado</h3></div><p>Las auditorías se agrupan automáticamente por dominio cuando una base compatible está configurada.</p></div>
             <div class="platform-grid">
               <article class="panel"><div class="panel-head"><div><span>ESTADO DE PLATAFORMA</span><h3>Persistencia SQL</h3></div><span class="status-pill" id="platformStatusPill">Comprobando</span></div><div id="platformStatusMetrics" class="metric-list"></div><form id="platformAccessForm" class="platform-access-form"><input class="sr-only" type="text" name="username" autocomplete="username" value="CYBERGCODE platform" tabindex="-1" aria-hidden="true"><label>Clave administrativa<input id="platformAccessKey" type="password" autocomplete="current-password" placeholder="CYBERGCODE_PLATFORM_KEY"></label><button type="submit" class="mini-action">Desbloquear histórico</button><small>La clave se conserva únicamente en esta pestaña del navegador mediante sessionStorage.</small></form></article>
-              <article class="panel"><div class="panel-head"><div><span>PROYECTO ACTUAL</span><h3 id="currentProjectName">Sin proyecto persistente</h3></div></div><div id="currentProjectMetrics" class="metric-list"></div><form id="projectEditForm" class="project-edit-form"><label>Nombre<input id="projectNameInput" maxlength="160" placeholder="Nombre del proyecto"></label><label>Descripción<textarea id="projectDescriptionInput" rows="3" maxlength="500" placeholder="Notas internas del proyecto"></textarea></label><button type="submit" class="mini-action">Guardar proyecto</button></form></article>
+              <article class="panel"><div class="panel-head"><div><span>PROYECTO ACTUAL</span><h3 id="currentProjectName">Sin proyecto persistente</h3></div></div><div id="currentProjectMetrics" class="metric-list"></div><form id="projectEditForm" class="project-edit-form"><label>Nombre<input id="projectNameInput" maxlength="160" placeholder="Nombre del proyecto"></label><label>Descripción<textarea id="projectDescriptionInput" rows="3" maxlength="500" placeholder="Notas internas del proyecto"></textarea></label><div class="panel-actions"><button type="submit" class="mini-action">Guardar cambios</button><button id="archiveProject" type="button" class="mini-action danger-action">Archivar proyecto</button></div><small>Archivar es reversible y conserva las auditorías; evita eliminaciones accidentales.</small></form></article>
             </div>
-            <article class="panel"><div class="panel-head"><div><span>PROYECTOS</span><h3>Dominios con histórico persistente</h3></div><button id="refreshProjects" class="mini-action" type="button">Actualizar</button></div><div id="projectList" class="project-list"></div></article>
+            <article class="panel"><div class="panel-head"><div><span>PROYECTOS</span><h3>Dominios con histórico persistente</h3></div><div class="panel-actions"><button id="createProjectToggle" class="mini-action" type="button">Agregar proyecto</button><button id="refreshProjects" class="mini-action" type="button">Actualizar</button></div></div><form id="projectCreateForm" class="project-create-form hidden"><label>Dominio<input id="newProjectDomain" inputmode="url" autocomplete="url" placeholder="ejemplo.com" required></label><label>Nombre<input id="newProjectName" maxlength="160" placeholder="Nombre interno"></label><label>Descripción<input id="newProjectDescription" maxlength="500" placeholder="Objetivo o notas del proyecto"></label><button type="submit" class="mini-action">Crear proyecto</button></form><div id="projectList" class="project-list"></div></article>
           </section>
 
           <section class="analysis-view" data-view="history" role="tabpanel" hidden>
@@ -509,7 +541,7 @@
       <footer><span>CYBERGCODE WEB AUDIT INTELLIGENCE</span><span>DIAGNÓSTICO BASADO EN EVIDENCIA PÚBLICA</span></footer>
     </div>
   </div>
-  <script type="module" src="/js/auth.js?v=0.20.0"></script>
-  <script type="module" src="/js/app.js?v=0.20.0"></script>
+  <script type="module" src="/js/auth.js?v=0.21.0"></script>
+  <script type="module" src="/js/app.js?v=0.21.0"></script>
 </body>
 </html>

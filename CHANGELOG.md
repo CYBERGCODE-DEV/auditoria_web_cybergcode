@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.21.0 — informe navegable, progreso verificable y Supabase SQL
+
+- Reemplazo de las veinte pestañas horizontales por un índice lateral jerárquico del informe y selector compacto en móvil.
+- Auditorías privadas ejecutadas como jobs con avance confirmado por URL y fase de servidor, sin rotación ficticia de módulos.
+- Pantalla de procesamiento ajustada a la altura útil del viewport en escritorio y tablet.
+- Tarjetas de puntuación normalizadas para alinear valores, `/100` y barras sin solapamientos.
+- Alta, edición y archivado reversible de proyectos desde el espacio de trabajo.
+- Adaptador PostgreSQL genérico mediante `postgres.js`, compatible con el Transaction Pooler de Supabase.
+- Diagnóstico de persistencia explícito para diferenciar Supabase Auth de la conexión SQL.
+
 ## v0.20.0 — arquitectura visual y navegación responsive
 
 - Separa la portada pública de la aplicación privada mediante un espacio de trabajo con navegación lateral.

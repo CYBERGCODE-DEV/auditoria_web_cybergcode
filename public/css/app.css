@@ -755,7 +755,7 @@ html,body{max-width:100%;overflow-x:clip}
 }
 
 /* =========================================================
-   CYBERGCODE v0.19.0 — administration, account and quotas
+   CYBERGCODE v0.19.0 — administration, account and quotas (legacy layer)
    ========================================================= */
 .hero-layout{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(19rem,.72fr);gap:clamp(2rem,5vw,5.5rem);align-items:center}
 .hero-copy{max-width:none}
@@ -822,3 +822,46 @@ html[data-theme="light"] .workspace-sidebar{background:#f8fbfe;box-shadow:.5rem 
 @media(max-width:72rem){.public-capability-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-shell{grid-template-columns:15rem minmax(0,1fr)}.workspace-content{padding-inline:1.25rem}.workspace-content .hero-layout{grid-template-columns:1fr}.workspace-content .hero-process{display:block}.workspace-content .hero-process ol{display:grid}.workspace-content>.working{width:calc(100% + 2.5rem);margin-left:-1.25rem}}
 @media(max-width:56rem){.workspace-shell{display:block}.workspace-sidebar{position:fixed;left:0;top:0;width:min(19rem,86vw);transform:translateX(-105%);transition:transform .25s ease}.sidebar-toggle{display:grid}.sidebar-backdrop{position:fixed;inset:0;z-index:55;width:100%;height:100%;border:0;background:rgba(1,7,16,.65);backdrop-filter:blur(.2rem)}body.sidebar-open .workspace-sidebar{transform:translateX(0)}body.sidebar-open .sidebar-backdrop{display:block}.workspace-header{min-height:4.5rem}.workspace-content .dashboard-nav{top:5rem}.workspace-content .real-data-badge{display:inline-flex}}
 @media(max-width:48rem){.public-hero{padding-top:3rem}.public-hero-copy h1{font-size:clamp(2.55rem,13vw,4rem)}.public-hero-visual img{aspect-ratio:4/3}.public-hero-visual figcaption{width:auto;border-radius:.75rem;font-size:.62rem}.public-demo-card{position:static;margin-top:0}.public-section-heading{grid-template-columns:1fr}.public-section-heading .eyebrow{grid-column:1}.public-section-heading h2,.public-how h2{font-size:clamp(2.15rem,11vw,3.2rem)}.public-capability-grid{grid-template-columns:1fr}.public-capability-grid article{min-height:0}.public-proof{grid-template-columns:1fr}.public-how li{grid-template-columns:1fr}.workspace-content{padding-inline:.75rem}.workspace-header-actions .real-data-badge{display:none}.workspace-content .hero{padding-top:2rem}.workspace-content .hero h1{font-size:clamp(2.35rem,12vw,3.6rem)}.workspace-content .hero-outcomes{grid-template-columns:1fr}.workspace-content .scope-head{margin-top:3.5rem}.workspace-content>.working{width:calc(100% + 1.5rem);margin-left:-.75rem}}
+
+/* =========================================================
+   CYBERGCODE v0.21 — report navigator + truthful progress
+   ========================================================= */
+.workspace-sidebar>nav{min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:.15rem;scrollbar-width:thin}
+.report-navigation{display:grid;gap:.2rem;margin:.65rem 0;padding:.65rem 0;border-block:1px solid var(--line-soft)}
+.report-navigation.hidden{display:none}
+.report-navigation>p{margin:.2rem .7rem .45rem!important}
+.report-navigation details{border-radius:.58rem}
+.report-navigation summary{list-style:none;display:flex;align-items:center;justify-content:space-between;padding:.48rem .7rem;color:var(--muted);font-size:.68rem;font-weight:800;cursor:pointer}
+.report-navigation summary::-webkit-details-marker{display:none}.report-navigation summary:after{content:"+";color:var(--muted-2);font-size:.85rem}.report-navigation details[open] summary:after{content:"−"}
+.report-navigation details button,.report-nav-link{width:100%;display:flex;align-items:center;justify-content:space-between;min-height:2rem;padding:.38rem .7rem .38rem 1.15rem;border:0;border-left:2px solid transparent;background:transparent;color:var(--muted);font-size:.65rem;font-weight:650;text-align:left;cursor:pointer}
+.report-nav-link{padding-left:.7rem;font-weight:800}.report-navigation button:hover,.report-navigation button.active{border-left-color:var(--accent);background:rgba(var(--accent-rgb),.07);color:var(--text)}
+.report-nav-action{margin-top:.25rem;color:var(--accent2)}.report-nav-action b{min-width:1.5rem;padding:.18rem .35rem;border-radius:999px;background:rgba(var(--purple-rgb),.12);color:var(--purple);font-size:.56rem;text-align:center}
+.panel-actions{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}.danger-action{color:var(--danger)!important;border-color:color-mix(in srgb,var(--danger) 35%,var(--line))!important}
+.project-create-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:.65rem;align-items:end;margin:1rem 0;padding:1rem;border:1px solid var(--line-soft);border-radius:.8rem;background:var(--surface-2)}.project-create-form label{display:grid;gap:.35rem;color:var(--muted);font-size:.65rem;font-weight:800}.project-create-form input{width:100%;min-width:0;padding:.65rem;border:1px solid var(--line);border-radius:.55rem;background:var(--panel);color:var(--text)}.platform-diagnostic{display:grid;gap:.35rem}.platform-diagnostic small{color:var(--muted-2);line-height:1.5}
+
+/* One navigation model: sidebar on desktop, grouped selector on small screens. */
+@media(min-width:56.01rem){.dashboard:not(.platform-only)>.dashboard-nav,.dashboard:not(.platform-only)>.dashboard-nav-mobile{display:none!important}.dashboard:not(.platform-only){padding-top:1.25rem}.dashboard:not(.platform-only) .dashboard-head{margin-top:0}}
+
+/* All score tiles share one baseline; the progress bar can no longer cover /100. */
+.score-card{display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr auto;align-items:end;min-height:7.25rem!important;padding:1rem!important}
+.score-card>span{grid-column:1/-1;align-self:start;min-height:1.8em;font-size:.64rem!important;font-weight:800;line-height:1.35}
+.score-card>b{grid-column:1;margin:0!important;font-size:clamp(1.8rem,2.6vw,2.25rem)!important;line-height:1!important}
+.score-card>em{grid-column:2;align-self:end;margin:0 0 .15rem .3rem;white-space:nowrap;font-size:.65rem!important}
+.score-card>.score-bar{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;grid-column:1/-1;width:100%;height:.34rem!important;margin:.75rem 0 0!important}
+.score-hero{min-height:15rem}.score-hero>p{max-height:9.2rem;overflow:auto;padding-right:.25rem;text-align:left}.score-ring-inner{white-space:nowrap}
+.panel>span,.panel-head span,.section-intro>div>span{font-weight:850}.panel h3,.section-intro h3{font-weight:800}.metric-list b,.metric-list strong,.audit-table th{font-weight:750}
+
+/* Desktop/tablet audit canvas occupies the remaining viewport, not header + 100vh. */
+@media(min-width:56.01rem){
+  body[data-view="working"]{overflow:hidden}
+  body[data-view="working"] .workspace-content{height:100dvh;overflow:hidden;padding-bottom:0}
+  .workspace-content>.working{height:calc(100dvh - 5rem);min-height:0;overflow:hidden}
+  .workspace-content>.working .working-shell{height:100%;min-height:0!important;padding:.65rem clamp(.65rem,1.2vw,1.15rem)!important;overflow:hidden!important;grid-template-rows:auto auto auto!important;align-content:center!important}
+  .workspace-content>.working .working-orbit{width:min(31rem,40vw,calc(100dvh - 9rem))!important;min-width:20rem!important;max-height:calc(100dvh - 9rem)}
+  .workspace-content>.working .working-brand-lockup{margin-bottom:.75rem}.workspace-content>.working .working-left h2{margin:.4rem 0 .65rem}.workspace-content>.working .working-live-list{margin-top:.7rem}.workspace-content>.working .working-left blockquote{display:none}
+  .workspace-content>.working .working-process-card{padding:.65rem .75rem}.workspace-content>.working .working-step{min-height:1.65rem;padding:.25rem .05rem}.workspace-content>.working .working-note{display:none}
+  .workspace-content>.working .working-strip{padding:.35rem .55rem}.workspace-content>.working .working-footer{padding:0}
+}
+@media(max-width:72rem) and (min-width:56.01rem){.workspace-content>.working .working-shell{grid-template-columns:minmax(10rem,.7fr) minmax(19rem,1.15fr) minmax(11rem,.72fr)!important}.workspace-content>.working .working-orbit{width:min(26rem,38vw,calc(100dvh - 9rem))!important}.workspace-content>.working .working-site-logo{width:7.3rem!important;height:7.3rem!important}}
+@media(max-width:56rem){.report-navigation{display:none}.dashboard-nav-mobile{display:block!important;position:sticky;top:5rem}.project-create-form{grid-template-columns:1fr 1fr}.project-create-form button{min-height:2.7rem}}
+@media(max-width:38rem){.project-create-form{grid-template-columns:1fr}.panel-actions{width:100%}.panel-actions .mini-action{flex:1}.score-cards{grid-template-columns:1fr!important}.score-card{min-height:6.5rem!important}.score-hero>p{max-height:none;overflow:visible}}
