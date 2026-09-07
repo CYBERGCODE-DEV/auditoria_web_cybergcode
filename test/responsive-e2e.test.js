@@ -58,9 +58,31 @@ test('interfaz sin overflow y menús conectados en seis viewports', { timeout:12
         const layout = await page.evaluate(()=>({ scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,title:document.title }));
         assert.match(layout.title,/CYBERGCODE|Administración|Mi cuenta/i);
         assert.ok(layout.scrollWidth <= layout.clientWidth + 1,`${route} ${width}px: ${layout.scrollWidth} > ${layout.clientWidth}`);
+        if (width === 390) {
+          await page.click('#adminMenu');
+          const menuOpen = await page.evaluate(()=>document.body.classList.contains('admin-menu-open') && getComputedStyle(document.querySelector('#adminSidebar')).transform !== 'none');
+          assert.equal(menuOpen,true,`${route}: el menú móvil no abrió`);
+          await page.click('#adminBackdrop');
+        }
         if (visualDir && width === 1440) await page.screenshot({ path:path.join(visualDir,`${route.replace('.html','')}-laptop-1440.png`),fullPage:true });
       }
     }
+    await page.setViewport({ width:1440,height:900,deviceScaleFactor:1 });
+    await page.goto(`http://127.0.0.1:${app.address().port}/`, { waitUntil:'networkidle0' });
+    const privateLayout = await page.evaluate(()=>{
+      document.querySelector('#publicPortal').hidden=true;
+      document.querySelector('#privateApp').hidden=false;
+      document.body.dataset.authenticated='true';
+      return {
+        columns:getComputedStyle(document.querySelector('.workspace-shell')).gridTemplateColumns.split(' ').length,
+        sidebarVisible:getComputedStyle(document.querySelector('#workspaceSidebar')).display !== 'none',
+        overflow:document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
+      };
+    });
+    assert.equal(privateLayout.columns,2);
+    assert.equal(privateLayout.sidebarVisible,true);
+    assert.equal(privateLayout.overflow,true);
+    if (visualDir) await page.screenshot({ path:path.join(visualDir,'workspace-laptop-1440.png'),fullPage:true });
     await page.goto(`http://127.0.0.1:${app.address().port}/`, { waitUntil:'networkidle0' });
     const menuResult = await page.evaluate(async () => {
       document.body.dataset.view = 'dashboard';

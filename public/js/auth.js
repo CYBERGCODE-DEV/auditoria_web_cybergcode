@@ -21,12 +21,15 @@ function applySession(next) {
   $('#logoutButton').classList.toggle('hidden',!authenticated);
   $('#sessionUser').classList.toggle('hidden',!authenticated);
   $('#adminOpen').classList.toggle('hidden',!session.user?.isAdmin);
+  $('#sidebarAdmin')?.classList.toggle('hidden',!session.user?.isAdmin);
   $('#profileOpen').classList.toggle('hidden',!authenticated);
   $('#publicNav').classList.toggle('hidden',authenticated);
   $('#platformDbBadge')?.classList.toggle('hidden',!authenticated);
   $('#workspaceNav')?.classList.toggle('hidden',!authenticated);
   if (authenticated) {
     $('#sessionUser').textContent = session.user.name || session.user.email;
+    if ($('#sidebarUser')) $('#sidebarUser').textContent = session.user.name || session.user.email;
+    if ($('#activationUsername')) $('#activationUsername').value = session.user.email || '';
     document.body.dataset.authenticated = 'true';
     const keyField = $('#auditAccessKey')?.closest('label');
     if (keyField) keyField.classList.add('hidden');
@@ -93,6 +96,14 @@ $('#logoutButton')?.addEventListener('click',async()=>{
   applySession({ configured:true,authenticated:false,user:null });
   history.replaceState(null,'',location.pathname); location.reload();
 });
+
+$('#sidebarLogout')?.addEventListener('click',()=>$('#logoutButton')?.click());
+$('#sidebarToggle')?.addEventListener('click',()=>document.body.classList.toggle('sidebar-open'));
+$('#sidebarBackdrop')?.addEventListener('click',()=>document.body.classList.remove('sidebar-open'));
+document.querySelectorAll('.workspace-sidebar [data-workspace]').forEach((button)=>button.addEventListener('click',()=>{
+  document.querySelectorAll('.workspace-sidebar [data-workspace]').forEach((item)=>item.classList.toggle('active',item===button));
+  document.body.classList.remove('sidebar-open');
+}));
 
 document.querySelectorAll('[data-workspace]').forEach((button)=>button.addEventListener('click',()=>{
   const target=button.dataset.workspace;

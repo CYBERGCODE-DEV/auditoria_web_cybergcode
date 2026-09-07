@@ -22,19 +22,20 @@ let platformState = { status:null, projects:[], history:[], currentProjectId:nul
 const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 function syncThemeButton() {
-  const button = $('#themeToggle');
-  if (!button) return;
   const theme = window.CGAuditTheme?.get?.() || document.documentElement.dataset.theme || 'dark';
   const next = theme === 'dark' ? 'claro' : 'oscuro';
-  button.querySelector('.theme-icon').textContent = theme === 'dark' ? '☾' : '☀';
-  button.querySelector('.theme-text').textContent = theme === 'dark' ? 'Oscuro' : 'Claro';
-  button.setAttribute('aria-label', `Cambiar a tema ${next}`);
-  button.setAttribute('title', `Cambiar a tema ${next}`);
+  [$('#themeToggle'),$('#workspaceThemeToggle')].filter(Boolean).forEach((button)=>{
+    button.querySelector('.theme-icon').textContent = theme === 'dark' ? '☾' : '☀';
+    button.querySelector('.theme-text').textContent = theme === 'dark' ? 'Oscuro' : 'Claro';
+    button.setAttribute('aria-label', `Cambiar a tema ${next}`);
+    button.setAttribute('title', `Cambiar a tema ${next}`);
+  });
 }
 
 syncThemeButton();
 window.addEventListener('cybergcode-themechange', syncThemeButton);
 $('#themeToggle')?.addEventListener('click', () => window.CGAuditTheme?.toggle?.());
+$('#workspaceThemeToggle')?.addEventListener('click', () => window.CGAuditTheme?.toggle?.());
 
 const severityRank = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
 const labels = { security:'Seguridad', technical:'Técnico', seo:'SEO', images:'Imágenes', performance:'Rendimiento', content:'Contenido', accessibility:'Accesibilidad', ux:'UX / CRO', compliance:'ISO / Cumplimiento observable' };

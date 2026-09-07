@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.20.0 — arquitectura visual y navegación responsive
+
+- Separa la portada pública de la aplicación privada mediante un espacio de trabajo con navegación lateral.
+- Rediseña administración y cuenta con secciones independientes, jerarquía tipográfica y menú móvil.
+- Amplía la portada con capacidades, principios operativos, SVG accesibles y una ilustración original de auditoría.
+- Refuerza los temas claro y oscuro, espaciado responsive y navegación para móvil, tablet y escritorio.
+
 ## v0.19.0 — administración, perfil y límites
 
 - Añade una consola responsive en `/admin` para usuarios, organizaciones, roles, suscripciones manuales, límites, suspensiones y activaciones.
